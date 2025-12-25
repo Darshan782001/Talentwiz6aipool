@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call Analysis - TalentCore AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-brain me-2"></i>TalentCore AI
+            </a>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 100px;">
+        <h2><i class="fas fa-chart-line me-2"></i>Call Analysis</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <form id="analysisForm">
+                    <div class="mb-3">
+                        <label for="transcript" class="form-label">Interview Transcript</label>
+                        <textarea class="form-control" id="transcript" rows="12" placeholder="Paste interview transcript here..." required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="interviewId" class="form-label">Interview ID (Optional)</label>
+                        <input type="text" class="form-control" id="interviewId" placeholder="Enter interview ID">
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-analytics me-2"></i>Analyze Call
+                    </button>
+                </form>
+            </div>
+            <div class="col-md-6">
+                <div id="results" class="d-none">
+                    <h4>Analysis Results</h4>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <h6>Sentiment Analysis</h6>
+                                <div>Overall Score: <span id="sentimentScore" class="badge bg-primary"></span></div>
+                                <div>Confidence: <span id="confidence" class="badge bg-info"></span></div>
+                            </div>
+                            <div class="mb-3">
+                                <h6>Engagement Metrics</h6>
+                                <div>Engagement: <span id="engagement" class="badge bg-success"></span></div>
+                                <div>Communication: <span id="communication" class="badge bg-warning"></span></div>
+                            </div>
+                            <div class="mb-3">
+                                <h6>Technical Assessment</h6>
+                                <div>Competency: <span id="technical" class="badge bg-primary"></span></div>
+                            </div>
+                            <div class="mb-3">
+                                <h6>Recommendation</h6>
+                                <div id="recommendation" class="alert alert-info"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="loading" class="d-none text-center">
+                    <div class="spinner-border" role="status"></div>
+                    <p>Analyzing call...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('analysisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const transcript = document.getElementById('transcript').value;
+            const interviewId = document.getElementById('interviewId').value;
+            
+            document.getElementById('loading').classList.remove('d-none');
+            document.getElementById('results').classList.add('d-none');
+            
+            try {
+                const response = await fetch('/api/analyze-call', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        transcript: transcript,
+                        interview_id: interviewId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+                
+                // Display results
+                document.getElementById('sentimentScore').textContent = data.sentiment_analysis.overall_score + '%';
+                document.getElementById('confidence').textContent = data.sentiment_analysis.confidence_level + '%';
+                document.getElementById('engagement').textContent = data.engagement_metrics.engagement_score + '%';
+                document.getElementById('communication').textContent = data.engagement_metrics.communication_clarity + '%';
+                document.getElementById('technical').textContent = data.technical_assessment.technical_competency + '%';
+                document.getElementById('recommendation').textContent = data.recommendations.hire_recommendation;
+                
+                document.getElementById('results').classList.remove('d-none');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                document.getElementById('loading').classList.add('d-none');
+            }
+        });
+    </script>
+</body>
+</html>

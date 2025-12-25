@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Generator - TalentCore AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-900">TalentCore AI</h1>
+                </div>
+                <div class="flex space-x-4 items-center">
+                    <a href="/" class="text-gray-600 hover:text-gray-900">Dashboard</a>
+                    <a href="/matcher" class="text-gray-600 hover:text-gray-900">Matcher</a>
+                    <a href="/interview-generator" class="text-blue-600 font-medium">Generator</a>
+                    <a href="/live-interview" class="text-gray-600 hover:text-gray-900">Live Interview</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto py-8 px-4">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">
+                <i class="fas fa-question-circle text-blue-600 mr-2"></i>
+                Interview Question Generator
+            </h2>
+            
+            <form id="questionForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Role/Position</label>
+                        <input type="text" id="role" placeholder="e.g., Senior Software Engineer" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Experience Level</label>
+                        <select id="experienceLevel" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                            <option value="junior">Junior (0-2 years)</option>
+                            <option value="mid" selected>Mid-level (3-5 years)</option>
+                            <option value="senior">Senior (6+ years)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Focus Areas (Optional)</label>
+                    <div class="flex flex-wrap gap-2 mb-2" id="focusAreas"></div>
+                    <input type="text" id="focusInput" placeholder="Add focus area (press Enter)" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition duration-200 font-medium">
+                    <i class="fas fa-magic mr-2"></i>Generate Interview Questions
+                </button>
+            </form>
+        </div>
+
+        <div id="results" class="mt-8 hidden">
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Generated Questions</h3>
+                    <div class="flex space-x-2">
+                        <button id="exportBtn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition">
+                            <i class="fas fa-download mr-1"></i>Export
+                        </button>
+                        <button id="startInterviewBtn" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition">
+                            <i class="fas fa-play mr-1"></i>Start Live Interview
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="questionsList" class="space-y-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let focusAreas = [];
+        let generatedQuestions = [];
+
+        // Focus areas management
+        document.getElementById('focusInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = this.value.trim();
+                if (value && !focusAreas.includes(value)) {
+                    focusAreas.push(value);
+                    updateFocusAreas();
+                    this.value = '';
+                }
+            }
+        });
+
+        function updateFocusAreas() {
+            const container = document.getElementById('focusAreas');
+            container.innerHTML = focusAreas.map(area => 
+                `<span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                    ${area}
+                    <button onclick="removeFocusArea('${area}')" class="ml-2 text-blue-600 hover:text-blue-800">×</button>
+                </span>`
+            ).join('');
+        }
+
+        function removeFocusArea(area) {
+            focusAreas = focusAreas.filter(a => a !== area);
+            updateFocusAreas();
+        }
+
+        // Form submission
+        document.getElementById('questionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const role = document.getElementById('role').value;
+            const experienceLevel = document.getElementById('experienceLevel').value;
+            
+            if (!role) {
+                alert('Please enter a role/position');
+                return;
+            }
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/generate-qa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        role: role,
+                        experience_level: experienceLevel,
+                        focus_areas: focusAreas
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                generatedQuestions = data.questions || [];
+                displayQuestions(data);
+                
+            } catch (error) {
+                alert('Error generating questions: ' + error.message);
+            } finally {
+                submitBtn.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate Interview Questions';
+                submitBtn.disabled = false;
+            }
+        });
+
+        function displayQuestions(data) {
+            const results = document.getElementById('results');
+            const questionsList = document.getElementById('questionsList');
+            
+            questionsList.innerHTML = data.questions.map((q, index) => `
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-semibold text-gray-900">Question ${index + 1}</h4>
+                        <div class="flex space-x-2">
+                            <span class="px-2 py-1 text-xs rounded-full ${getTypeColor(q.type)}">${q.type}</span>
+                            <span class="px-2 py-1 text-xs rounded-full ${getDifficultyColor(q.difficulty)}">${q.difficulty}</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-800 mb-3">${q.question}</p>
+                    <div class="text-sm text-gray-600">
+                        <p><strong>Duration:</strong> ${q.expected_duration || '5-10 minutes'}</p>
+                        <p><strong>Category:</strong> ${q.category || 'General'}</p>
+                        ${q.evaluation_criteria ? `<p><strong>Evaluation:</strong> ${q.evaluation_criteria.join(', ')}</p>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            results.classList.remove('hidden');
+        }
+
+        function getTypeColor(type) {
+            const colors = {
+                'technical': 'bg-blue-100 text-blue-800',
+                'behavioral': 'bg-green-100 text-green-800',
+                'scenario': 'bg-yellow-100 text-yellow-800',
+                'challenge': 'bg-red-100 text-red-800'
+            };
+            return colors[type] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getDifficultyColor(difficulty) {
+            const colors = {
+                'junior': 'bg-green-100 text-green-800',
+                'mid': 'bg-yellow-100 text-yellow-800',
+                'senior': 'bg-red-100 text-red-800'
+            };
+            return colors[difficulty] || 'bg-gray-100 text-gray-800';
+        }
+
+        // Export functionality
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            const data = {
+                questions: generatedQuestions,
+                role: document.getElementById('role').value,
+                experience_level: document.getElementById('experienceLevel').value,
+                focus_areas: focusAreas,
+                generated_at: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `interview-questions-${data.role.replace(/\s+/g, '-').toLowerCase()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // Start live interview
+        document.getElementById('startInterviewBtn').addEventListener('click', function() {
+            if (generatedQuestions.length === 0) {
+                alert('Please generate questions first');
+                return;
+            }
+            
+            localStorage.setItem('interviewQuestions', JSON.stringify(generatedQuestions));
+            localStorage.setItem('interviewRole', document.getElementById('role').value);
+            window.location.href = '/live-interview';
+        });
+    </script>
+</body>
+</html>

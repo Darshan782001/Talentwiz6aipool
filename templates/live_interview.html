@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Interview - TalentCore AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-900">TalentCore AI</h1>
+                </div>
+                <div class="flex space-x-4 items-center">
+                    <div id="interviewStatus" class="px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                        <i class="fas fa-circle text-green-500 mr-1"></i>Ready
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Setup Modal -->
+    <div id="setupModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Interview Setup</h3>
+            <form id="setupForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Candidate Name</label>
+                    <input type="text" id="candidateName" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                    <input type="text" id="roleInput" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="window.location.href='/interview-generator'" 
+                            class="px-4 py-2 text-gray-600 hover:text-gray-800">Back</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Start Interview
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto py-8 px-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Interview Panel -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-gray-900">
+                            <i class="fas fa-microphone text-blue-600 mr-2"></i>
+                            Live Interview
+                        </h2>
+                        <div id="progress" class="text-sm text-gray-600">Question 1 of 8</div>
+                    </div>
+
+                    <!-- Current Question -->
+                    <div id="currentQuestion" class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                        <h3 class="font-semibold text-blue-900 mb-2">Current Question</h3>
+                        <p id="questionText" class="text-blue-800">Loading question...</p>
+                        <div class="mt-2 text-sm text-blue-600">
+                            <span id="questionType" class="mr-4"></span>
+                            <span id="questionDuration"></span>
+                        </div>
+                    </div>
+
+                    <!-- Voice Controls -->
+                    <div class="flex justify-center space-x-4 mb-6">
+                        <button id="playQuestionBtn" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition">
+                            <i class="fas fa-play mr-2"></i>Play Question
+                        </button>
+                        <button id="recordBtn" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition">
+                            <i class="fas fa-microphone mr-2"></i>Start Recording
+                        </button>
+                        <button id="nextBtn" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition" disabled>
+                            <i class="fas fa-forward mr-2"></i>Next Question
+                        </button>
+                    </div>
+
+                    <!-- Answer Input -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Candidate Response</label>
+                        <textarea id="answerText" rows="4" placeholder="Answer will appear here as you speak..." 
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+
+                    <!-- Timer -->
+                    <div class="text-center">
+                        <div id="timer" class="text-2xl font-mono text-gray-600">00:00</div>
+                        <div class="text-sm text-gray-500">Response Time</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Interview Info -->
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <h3 class="font-semibold text-gray-900 mb-3">Interview Details</h3>
+                    <div class="space-y-2 text-sm">
+                        <div><strong>Candidate:</strong> <span id="candidateDisplay">-</span></div>
+                        <div><strong>Role:</strong> <span id="roleDisplay">-</span></div>
+                        <div><strong>Started:</strong> <span id="startTime">-</span></div>
+                        <div><strong>Duration:</strong> <span id="totalDuration">00:00</span></div>
+                    </div>
+                </div>
+
+                <!-- Question Progress -->
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <h3 class="font-semibold text-gray-900 mb-3">Progress</h3>
+                    <div id="questionProgress" class="space-y-2"></div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <h3 class="font-semibold text-gray-900 mb-3">Actions</h3>
+                    <div class="space-y-2">
+                        <button id="pauseBtn" class="w-full bg-yellow-600 text-white py-2 px-4 rounded-md hover:bg-yellow-700 transition">
+                            <i class="fas fa-pause mr-2"></i>Pause Interview
+                        </button>
+                        <button id="endBtn" class="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition">
+                            <i class="fas fa-stop mr-2"></i>End Interview
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let interviewState = {
+            questions: [],
+            currentIndex: 0,
+            interviewId: null,
+            transcript: [],
+            startTime: null,
+            isRecording: false,
+            timer: null,
+            questionStartTime: null
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedQuestions = localStorage.getItem('interviewQuestions');
+            const savedRole = localStorage.getItem('interviewRole');
+            
+            if (savedQuestions) {
+                interviewState.questions = JSON.parse(savedQuestions);
+                document.getElementById('roleInput').value = savedRole || '';
+            }
+        });
+
+        // Setup form
+        document.getElementById('setupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const candidateName = document.getElementById('candidateName').value;
+            const role = document.getElementById('roleInput').value;
+            
+            try {
+                const response = await fetch('/api/start-interview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        candidate_name: candidateName,
+                        role: role,
+                        questions: interviewState.questions
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                interviewState.interviewId = data.interview_id;
+                interviewState.startTime = new Date();
+                
+                document.getElementById('candidateDisplay').textContent = candidateName;
+                document.getElementById('roleDisplay').textContent = role;
+                document.getElementById('startTime').textContent = new Date().toLocaleTimeString();
+                
+                document.getElementById('setupModal').style.display = 'none';
+                loadCurrentQuestion();
+                startInterviewTimer();
+                
+            } catch (error) {
+                alert('Error starting interview: ' + error.message);
+            }
+        });
+
+        function loadCurrentQuestion() {
+            const question = interviewState.questions[interviewState.currentIndex];
+            if (!question) return;
+
+            document.getElementById('questionText').textContent = question.question;
+            document.getElementById('questionType').textContent = question.type.toUpperCase();
+            document.getElementById('questionDuration').textContent = question.expected_duration || '5-10 minutes';
+            document.getElementById('progress').textContent = `Question ${interviewState.currentIndex + 1} of ${interviewState.questions.length}`;
+            
+            updateProgressSidebar();
+            resetQuestionTimer();
+        }
+
+        function updateProgressSidebar() {
+            const container = document.getElementById('questionProgress');
+            container.innerHTML = interviewState.questions.map((q, index) => {
+                let status = 'pending';
+                let icon = 'fas fa-circle text-gray-300';
+                
+                if (index < interviewState.currentIndex) {
+                    status = 'completed';
+                    icon = 'fas fa-check-circle text-green-500';
+                } else if (index === interviewState.currentIndex) {
+                    status = 'current';
+                    icon = 'fas fa-play-circle text-blue-500';
+                }
+                
+                return `
+                    <div class="flex items-center text-sm ${status === 'current' ? 'font-semibold' : ''}">
+                        <i class="${icon} mr-2"></i>
+                        <span class="truncate">Q${index + 1}: ${q.type}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Voice controls
+        document.getElementById('playQuestionBtn').addEventListener('click', async function() {
+            const question = interviewState.questions[interviewState.currentIndex];
+            if (!question) return;
+
+            try {
+                const response = await fetch('/api/voice-stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: question.question })
+                });
+
+                const data = await response.json();
+                
+                // Simulate TTS playback
+                this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Playing...';
+                this.disabled = true;
+                
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-play mr-2"></i>Play Question';
+                    this.disabled = false;
+                }, data.duration * 1000 || 3000);
+                
+            } catch (error) {
+                console.error('TTS error:', error);
+            }
+        });
+
+        document.getElementById('recordBtn').addEventListener('click', function() {
+            if (!interviewState.isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        });
+
+        function startRecording() {
+            interviewState.isRecording = true;
+            interviewState.questionStartTime = new Date();
+            
+            document.getElementById('recordBtn').innerHTML = '<i class="fas fa-stop mr-2"></i>Stop Recording';
+            document.getElementById('recordBtn').className = 'bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition animate-pulse';
+            document.getElementById('interviewStatus').innerHTML = '<i class="fas fa-circle text-red-500 mr-1"></i>Recording';
+            document.getElementById('interviewStatus').className = 'px-3 py-1 rounded-full text-sm bg-red-100 text-red-800';
+            
+            // Simulate speech recognition
+            simulateSpeechRecognition();
+        }
+
+        function stopRecording() {
+            interviewState.isRecording = false;
+            
+            document.getElementById('recordBtn').innerHTML = '<i class="fas fa-microphone mr-2"></i>Start Recording';
+            document.getElementById('recordBtn').className = 'bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition';
+            document.getElementById('interviewStatus').innerHTML = '<i class="fas fa-circle text-green-500 mr-1"></i>Ready';
+            document.getElementById('interviewStatus').className = 'px-3 py-1 rounded-full text-sm bg-green-100 text-green-800';
+            document.getElementById('nextBtn').disabled = false;
+        }
+
+        function simulateSpeechRecognition() {
+            // Simulate real-time transcription
+            const sampleResponses = [
+                "I have experience with React and Node.js...",
+                "In my previous role, I worked on microservices architecture...",
+                "I would approach this problem by first analyzing the requirements...",
+                "My leadership style focuses on collaboration and mentoring..."
+            ];
+            
+            const response = sampleResponses[Math.floor(Math.random() * sampleResponses.length)];
+            const words = response.split(' ');
+            let currentText = '';
+            
+            words.forEach((word, index) => {
+                setTimeout(() => {
+                    currentText += word + ' ';
+                    document.getElementById('answerText').value = currentText;
+                }, index * 200);
+            });
+        }
+
+        document.getElementById('nextBtn').addEventListener('click', async function() {
+            const answer = document.getElementById('answerText').value;
+            
+            // Store current answer
+            interviewState.transcript.push({
+                question: interviewState.questions[interviewState.currentIndex].question,
+                answer: answer,
+                duration: interviewState.questionStartTime ? 
+                    Math.floor((new Date() - interviewState.questionStartTime) / 1000) : 0
+            });
+
+            interviewState.currentIndex++;
+            
+            if (interviewState.currentIndex >= interviewState.questions.length) {
+                endInterview();
+                return;
+            }
+
+            document.getElementById('answerText').value = '';
+            document.getElementById('nextBtn').disabled = true;
+            loadCurrentQuestion();
+        });
+
+        async function endInterview() {
+            try {
+                const fullTranscript = interviewState.transcript.map(t => 
+                    `Q: ${t.question}\nA: ${t.answer}\nDuration: ${t.duration}s\n`
+                ).join('\n');
+
+                const response = await fetch('/api/analyze-call', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        transcript: fullTranscript,
+                        interview_id: interviewState.interviewId
+                    })
+                });
+
+                const analysis = await response.json();
+                
+                // Store analysis and redirect
+                localStorage.setItem('interviewAnalysis', JSON.stringify(analysis));
+                localStorage.setItem('interviewTranscript', JSON.stringify(interviewState.transcript));
+                
+                window.location.href = '/analytics';
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                alert('Interview completed but analysis failed. Redirecting to dashboard.');
+                window.location.href = '/dashboard';
+            }
+        }
+
+        function startInterviewTimer() {
+            interviewState.timer = setInterval(() => {
+                const elapsed = Math.floor((new Date() - interviewState.startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('totalDuration').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function resetQuestionTimer() {
+            let seconds = 0;
+            const timerInterval = setInterval(() => {
+                if (!interviewState.isRecording) {
+                    clearInterval(timerInterval);
+                    return;
+                }
+                seconds++;
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                document.getElementById('timer').textContent = 
+                    `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // End interview button
+        document.getElementById('endBtn').addEventListener('click', function() {
+            if (confirm('Are you sure you want to end the interview?')) {
+                endInterview();
+            }
+        });
+    </script>
+</body>
+</html>

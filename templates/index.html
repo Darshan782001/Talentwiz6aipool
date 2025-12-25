@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentCore AI - Talent Intelligence Suite</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="main-container">
+        <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+            <div class="container">
+                <a class="navbar-brand" href="/">
+                    <i class="fas fa-brain me-2"></i>TalentCore AI
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link active" href="/">
+                        <i class="fas fa-home me-1"></i>Home
+                    </a>
+                    <a class="nav-link" href="/dashboard">
+                        <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+    <div class="container" style="margin-top: 100px;">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <div class="hero-section fade-in-up">
+                    <h1>TalentCore AI Suite</h1>
+                    <p class="lead">Complete AI-powered talent acquisition platform with 6 integrated modules</p>
+                    <p class="text-muted">From resume matching to voice interviews - streamline your entire hiring process</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Overview Section -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="features-overview">
+                    <h2 class="text-center mb-4">Complete Hiring Automation Platform</h2>
+                    <div class="row text-center">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stat-card">
+                                <h3>500+</h3>
+                                <p class="text-muted">Specialized Roles</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stat-card">
+                                <h3>95%</h3>
+                                <p class="text-muted">Accuracy Rate</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stat-card">
+                                <h3>6</h3>
+                                <p class="text-muted">AI Modules</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stat-card">
+                                <h3>80%</h3>
+                                <p class="text-muted">Time Saved</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6 fade-in-up">
+                <div class="feature-item">
+                    <div class="feature-icon-plain">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <h5 class="feature-title">TalentWiz</h5>
+                    <h6 class="feature-subtitle">Smart Matching Engine</h6>
+                    <p class="feature-description">Advanced AI-powered JD-Resume matching with neural scoring algorithms</p>
+                    <div class="feature-list">
+                        <p class="text-muted mb-1">• Neural matching scores (0-100)</p>
+                        <p class="text-muted mb-1">• Skill gap analysis & recommendations</p>
+                        <p class="text-muted mb-1">• Cultural fit assessment</p>
+                        <p class="text-muted mb-0">• Bulk resume processing</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6 fade-in-up">
+                <div class="feature-item">
+                    <div class="feature-icon-plain">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <h5 class="feature-title">ATS</h5>
+                    <h6 class="feature-subtitle">Applicant Tracking System</h6>
+                    <p class="feature-description">Complete applicant tracking system for end-to-end hiring management</p>
+                    <div class="feature-list">
+                        <p class="text-muted mb-1">• Candidate pipeline management</p>
+                        <p class="text-muted mb-1">• Interview scheduling & tracking</p>
+                        <p class="text-muted mb-1">• Team collaboration tools</p>
+                        <p class="text-muted mb-0">• Analytics & reporting</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6 fade-in-up">
+                <div class="feature-item">
+                    <div class="feature-icon-plain">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h5 class="feature-title">Q&A Generator</h5>
+                    <h6 class="feature-subtitle">Smart Question Builder</h6>
+                    <p class="feature-description">AI-powered interview question generator for 500+ specialized roles</p>
+                    <div class="feature-list">
+                        <p class="text-muted mb-1">• 500+ role-specific templates</p>
+                        <p class="text-muted mb-1">• Technical & behavioral questions</p>
+                        <p class="text-muted mb-1">• Difficulty level customization</p>
+                        <p class="text-muted mb-0">• Export & share capabilities</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6 fade-in-up">
+                <div class="feature-item">
+                    <div class="feature-icon-plain">
+                        <i class="fas fa-microphone"></i>
+                    </div>
+                    <h5 class="feature-title">Voice Interview</h5>
+                    <h6 class="feature-subtitle">AI Screening Platform</h6>
+                    <p class="feature-description">Automated voice screening interviews with real-time AI analysis</p>
+                    <div class="feature-list">
+                        <p class="text-muted mb-1">• Real-time speech recognition</p>
+                        <p class="text-muted mb-1">• AI-powered conversation flow</p>
+                        <p class="text-muted mb-1">• Sentiment & confidence analysis</p>
+                        <p class="text-muted mb-0">• Multi-language support</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6 fade-in-up">
+                <div class="feature-item">
+                    <div class="feature-icon-plain">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h5 class="feature-title">Call Analysis</h5>
+                    <h6 class="feature-subtitle">Deep Insights Engine</h6>
+                    <p class="feature-description">Advanced interview call analysis with sentiment & engagement metrics</p>
+                    <div class="feature-list">
+                        <p class="text-muted mb-1">• Sentiment analysis & trends</p>
+                        <p class="text-muted mb-1">• Technical competency scoring</p>
+                        <p class="text-muted mb-1">• Engagement metrics</p>
+                        <p class="text-muted mb-0">• Hiring recommendations</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6 fade-in-up">
+                <div class="feature-item">
+                    <div class="feature-icon-plain">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h5 class="feature-title">AI Assistant</h5>
+                    <h6 class="feature-subtitle">Smart Decision Support</h6>
+                    <p class="feature-description">Interactive AI co-pilot for hiring decisions and candidate evaluation</p>
+                    <div class="feature-list">
+                        <p class="text-muted mb-1">• Natural language queries</p>
+                        <p class="text-muted mb-1">• Hiring decision support</p>
+                        <p class="text-muted mb-1">• Candidate comparison tools</p>
+                        <p class="text-muted mb-0">• 24/7 intelligent assistance</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="row mt-5">
+            <div class="col-12 text-center">
+                <div class="cta-section">
+                    <h3 class="mb-3">Ready to Transform Your Hiring Process?</h3>
+                    <p class="text-muted mb-4">Access all features through the dashboard</p>
+                    <a href="/dashboard" class="btn btn-light btn-lg">
+                        <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- How It Works Section -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="how-it-works-section">
+                    <h2 class="text-center mb-4">How TalentCore AI Works</h2>
+                    <div class="row">
+                        <div class="col-md-3 text-center mb-4">
+                            <div class="process-step">
+                                <div class="step-number">1</div>
+                                <h6 class="mt-2">Upload & Match</h6>
+                                <p class="text-muted small">Upload JD and resumes for AI-powered matching</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center mb-4">
+                            <div class="process-step">
+                                <div class="step-number">2</div>
+                                <h6 class="mt-2">Generate Questions</h6>
+                                <p class="text-muted small">Create role-specific interview questions</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center mb-4">
+                            <div class="process-step">
+                                <div class="step-number">3</div>
+                                <h6 class="mt-2">Conduct Interviews</h6>
+                                <p class="text-muted small">Use voice interviews or call analysis</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center mb-4">
+                            <div class="process-step">
+                                <div class="step-number">4</div>
+                                <h6 class="mt-2">Make Decisions</h6>
+                                <p class="text-muted small">Get AI recommendations and insights</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Benefits Section -->
+        <div class="row mt-5 mb-5">
+            <div class="col-12">
+                <div class="benefits-section">
+                    <h2 class="text-center mb-4">Why Choose TalentCore AI?</h2>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="benefit-item">
+                                <i class="fas fa-clock text-warning me-2"></i>
+                                <span><strong>80% Faster Hiring:</strong> Reduce time-to-hire with automated screening</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="benefit-item">
+                                <i class="fas fa-bullseye text-success me-2"></i>
+                                <span><strong>95% Accuracy:</strong> AI-powered matching with neural algorithms</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="benefit-item">
+                                <i class="fas fa-dollar-sign text-info me-2"></i>
+                                <span><strong>Cost Effective:</strong> Reduce hiring costs by up to 60%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="benefit-item">
+                                <i class="fas fa-users text-primary me-2"></i>
+                                <span><strong>Better Hires:</strong> Data-driven decisions for quality candidates</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    </div>
+</body>
+</html>

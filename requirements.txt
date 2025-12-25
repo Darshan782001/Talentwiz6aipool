@@ -1,0 +1,8 @@
+Flask
+python-dotenv
+requests
+PyPDF2
+python-docx
+firebase-admin
+openai
+google-generativeai
