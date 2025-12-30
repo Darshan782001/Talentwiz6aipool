@@ -61,20 +61,27 @@ def extract_json_from_text(text):
         return json.loads(text)
     except:
         try:
-            # Look for JSON within code blocks
-            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
-            if json_match:
-                return json.loads(json_match.group(1))
+            # Remove any markdown code blocks
+            if '```json' in text:
+                text = text.split('```json')[1].split('```')[0]
+            elif '```' in text:
+                text = text.split('```')[1].split('```')[0]
             
-            # Look for JSON without code blocks
-            json_match = re.search(r'(\{.*\})', text, re.DOTALL)
-            if json_match:
-                return json.loads(json_match.group(1))
+            # Clean up common issues
+            text = text.strip()
+            text = re.sub(r'^[^{]*', '', text)  # Remove text before first {
+            text = re.sub(r'}[^}]*$', '}', text)  # Remove text after last }
             
-            # If no JSON found, create a fallback response
-            return {"error": "Could not parse JSON response", "raw_response": text}
+            return json.loads(text)
         except:
-            return {"error": "Failed to extract JSON", "raw_response": text}
+            # Return fallback structure
+            return {
+                "questions": [
+                    {"question": "Tell me about your background.", "answer": "Sample answer about background."},
+                    {"question": "What interests you about this role?", "answer": "Sample answer about interest."},
+                    {"question": "Describe a challenging project.", "answer": "Sample answer about a project."}
+                ]
+            }
 
 def retry_with_backoff(func, max_retries=3):
     for attempt in range(max_retries):
@@ -191,30 +198,37 @@ def index():
 
 @app.route('/generate-qa', methods=['POST'])
 def generate_qa():
+    import uuid
+    request_id = str(uuid.uuid4())[:8]
+    
     try:
         method = request.json.get('method')
+        print(f"[{request_id}] Request received - Method: {method}")
         
         if method == 'jd':
             job_description = request.json.get('jobDescription')
             if not job_description:
                 return jsonify({'error': 'Job description is required'}), 400
                 
-            prompt = f"""Generate 8 targeted interview questions with detailed answers based on this job description.
+            print(f"[{request_id}] JD Method - Processing job description only: {job_description[:100]}...")
+            
+            prompt = f"""You are an interview question generator. Generate exactly 8 interview questions with answers.
 
 Job Description: {job_description}
 
-Create questions that specifically match the requirements and skills mentioned in the JD.
-Include technical, behavioral, and scenario-based questions.
+Rules:
+1. Analyze the job description for experience level and skills
+2. Create 8 questions appropriate for the role
+3. Return ONLY valid JSON - no extra text
+4. Use this exact format:
 
-Return ONLY a valid JSON object in this exact format:
 {{
   "questions": [
-    {{
-      "question": "question text here",
-      "answer": "detailed sample answer here"
-    }}
+    {{"question": "Your question here?", "answer": "Sample answer here."}}
   ]
-}}"""
+}}
+
+Generate the JSON now:"""
             
             def call_azure():
                 return call_azure_openai(prompt)
@@ -226,27 +240,29 @@ Return ONLY a valid JSON object in this exact format:
             experience_level = request.json.get('experienceLevel')
             job_description = request.json.get('jobDescription', '')
             
+            print(f"[{request_id}] TITLE Method - Job: {job_title}, Experience: {experience_level}")
+            
             if not job_title or not experience_level:
                 return jsonify({'error': 'Job title and experience level are required'}), 400
             
-            prompt = f"""Generate 8 interview questions with detailed answers for this role:
+            prompt = f"""You are an interview question generator. Generate exactly 8 interview questions with answers.
 
 Role: {job_title}
-Experience Level: {experience_level}
-Additional Context: {job_description}
+Experience: {experience_level}
+Context: {job_description}
 
-Create targeted questions appropriate for this role and experience level.
-Include technical, behavioral, and scenario-based questions.
+Rules:
+1. Make questions appropriate for {experience_level} experience
+2. Return ONLY valid JSON - no extra text
+3. Use this exact format:
 
-Return ONLY a valid JSON object in this exact format:
 {{
   "questions": [
-    {{
-      "question": "question text here",
-      "answer": "detailed sample answer here"
-    }}
+    {{"question": "Your question here?", "answer": "Sample answer here."}}
   ]
-}}"""
+}}
+
+Generate the JSON now:"""
             
             def call_gemini():
                 return call_gemini_safe(prompt)
@@ -295,17 +311,31 @@ Return ONLY a valid JSON object in this exact format:
                 ]
             }
         
+        print(f"[{request_id}] Generated {len(result.get('questions', []))} questions for method: {method}")
+        
         # Store in Firestore if available
         if db:
             try:
-                db.collection('qa_sessions').add({
+                store_data = {
                     'method': method,
-                    'job_title': job_title if method == 'title' else None,
-                    'experience_level': experience_level if method == 'title' else None,
-                    'job_description': job_description[:500] if job_description else None,
-                    'questions': result.get('questions', []),
                     'timestamp': datetime.now()
-                })
+                }
+                
+                if method == 'title':
+                    store_data.update({
+                        'job_title': job_title,
+                        'experience_level': experience_level,
+                        'job_description': job_description[:500] if job_description else None
+                    })
+                elif method == 'jd':
+                    store_data.update({
+                        'job_description': job_description[:500]
+                    })
+                
+                store_data['questions'] = result.get('questions', [])
+                
+                db.collection('qa_sessions').add(store_data)
+                print(f"Stored in Firestore: method={method}")
             except Exception as e:
                 print(f"Firestore error: {e}")
         

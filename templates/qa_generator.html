@@ -44,9 +44,12 @@
                             <div class="mb-3">
                                 <label class="form-label">Experience Level</label>
                                 <select class="form-select" id="experienceLevel">
-                                    <option value="entry">Entry Level (0-2 years)</option>
-                                    <option value="mid">Mid Level (3-5 years)</option>
-                                    <option value="senior">Senior Level (6+ years)</option>
+                                    <option value="0-1 years">Entry Level (0-1 years)</option>
+                                    <option value="2+ years">Junior Level (2+ years)</option>
+                                    <option value="3-4 years">Mid Level (3-4 years)</option>
+                                    <option value="5+ years">Senior Level (5+ years)</option>
+                                    <option value="7+ years">Lead Level (7+ years)</option>
+                                    <option value="10+ years">Principal Level (10+ years)</option>
                                 </select>
                             </div>
                         </div>
@@ -60,6 +63,23 @@
                             <span class="loading spinner-border spinner-border-sm me-2"></span>
                             Generate Questions
                         </button>
+                        
+                        <div class="mt-2">
+                            <small class="text-muted" id="cacheStatus"></small>
+                        </div>
+                        
+                        <!-- Chatbot Interface -->
+                        <div class="mt-3" id="chatInterface" style="display: none;">
+                            <hr>
+                            <h6>Customize Questions</h6>
+                            <div class="mb-2">
+                                <input type="text" class="form-control" id="userRequest" placeholder="e.g., Make questions more technical, Add leadership questions, etc.">
+                            </div>
+                            <button class="btn btn-secondary btn-sm" onclick="customizeQuestions()">
+                                <span class="loading-custom spinner-border spinner-border-sm me-2" style="display: none;"></span>
+                                Customize
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -106,6 +126,40 @@
             const titleInputs = document.getElementById('titleInputs');
             titleInputs.style.display = this.value === 'title' ? 'block' : 'none';
         });
+        
+        // Clear cache when experience level changes
+        document.getElementById('experienceLevel').addEventListener('change', function() {
+            const jobTitle = document.getElementById('jobTitle').value;
+            if (jobTitle.trim()) {
+                // Clear cache for this job title to force regeneration
+                for (let key of qaCache.keys()) {
+                    if (key.startsWith(jobTitle.toLowerCase())) {
+                        qaCache.delete(key);
+                    }
+                }
+                document.getElementById('cacheStatus').textContent = 'Experience level changed - questions will be regenerated';
+                console.log('Cache cleared for experience level change');
+            }
+        });
+        
+        // Clear cache when job title changes
+        document.getElementById('jobTitle').addEventListener('input', function() {
+            // Clear cache when job title changes significantly
+            if (this.value.length > 3) {
+                for (let key of qaCache.keys()) {
+                    if (!key.startsWith(this.value.toLowerCase())) {
+                        qaCache.delete(key);
+                    }
+                }
+            }
+        });
+        
+        // Clear cache when job description changes
+        document.getElementById('jobDescription').addEventListener('input', function() {
+            // Clear all cache when job description changes
+            qaCache.clear();
+            document.getElementById('cacheStatus').textContent = 'Job description changed - questions will be regenerated';
+        });
 
         async function generateQuestions() {
             const startTime = Date.now();
@@ -124,17 +178,30 @@
                 return;
             }
 
-            // Create cache key
+            // Create cache key that includes full content and timestamp to prevent stale cache
             const cacheKey = method === 'title' 
-                ? `${jobTitle}-${experienceLevel}-${jobDescription.substring(0, 100)}`
-                : jobDescription.substring(0, 200);
+                ? `${jobTitle.toLowerCase()}-${experienceLevel}-${Date.now()}`
+                : `jd-${jobDescription.length}-${Date.now()}`;
             
-            // Check cache first
-            if (qaCache.has(cacheKey)) {
-                displayQuestions(qaCache.get(cacheKey));
-                document.getElementById('responseTime').textContent = 'Cached response (instant)';
-                return;
+            // Clear cache if experience level changed to force regeneration
+            if (method === 'title') {
+                // Remove any cached entries for this job title with different experience levels
+                for (let key of qaCache.keys()) {
+                    if (key.startsWith(jobTitle.toLowerCase()) && !key.includes(experienceLevel)) {
+                        qaCache.delete(key);
+                    }
+                }
             }
+            
+            // Temporarily disable cache to ensure fresh API calls
+            // if (qaCache.has(cacheKey)) {
+            //     displayQuestions(qaCache.get(cacheKey));
+            //     document.getElementById('responseTime').textContent = 'Cached response (instant)';
+            //     document.getElementById('cacheStatus').textContent = 'Using cached questions';
+            //     return;
+            // }
+            
+            document.getElementById('cacheStatus').textContent = 'Generating new questions for this experience level...';
 
             const button = document.querySelector('button');
             const loading = document.querySelector('.loading');
@@ -144,12 +211,18 @@
 
             try {
                 const payload = { method };
+                
                 if (method === 'title') {
                     payload.jobTitle = jobTitle;
                     payload.experienceLevel = experienceLevel;
-                    if (jobDescription.trim()) payload.jobDescription = jobDescription;
-                } else {
+                    if (jobDescription.trim()) {
+                        payload.jobDescription = jobDescription;
+                    }
+                    console.log('Sending TITLE method payload:', payload);
+                } else if (method === 'jd') {
                     payload.jobDescription = jobDescription;
+                    payload.experienceLevel = experienceLevel;
+                    console.log('Sending JD method payload:', payload);
                 }
 
                 const response = await fetch('/generate-qa', {
@@ -167,10 +240,20 @@
                 // Cache the result
                 qaCache.set(cacheKey, data);
                 
+                // Store for customization
+                currentQuestions = data.questions || [];
+                currentContext = {
+                    method: method,
+                    jobTitle: method === 'title' ? jobTitle : null,
+                    experienceLevel: experienceLevel,
+                    jobDescription: jobDescription
+                };
+                
                 displayQuestions(data);
                 
                 const responseTime = Date.now() - startTime;
                 document.getElementById('responseTime').textContent = `Generated in ${responseTime}ms`;
+                document.getElementById('cacheStatus').textContent = 'Questions generated successfully';
                 
                 // Refresh history
                 loadHistory();
@@ -209,32 +292,87 @@
             });
 
             container.innerHTML = html;
+            
+            // Show customize interface after questions are displayed
+            document.getElementById('chatInterface').style.display = 'block';
         }
 
-        // Preload common roles for instant responses
+        // Store current questions globally for customization
+        let currentQuestions = [];
+        let currentContext = {};
+        
+        async function customizeQuestions() {
+            const userRequest = document.getElementById('userRequest').value.trim();
+            if (!userRequest) {
+                alert('Please enter your customization request');
+                return;
+            }
+            
+            const loadingCustom = document.querySelector('.loading-custom');
+            const button = document.querySelector('#chatInterface button');
+            
+            button.disabled = true;
+            loadingCustom.style.display = 'inline-block';
+            
+            try {
+                const response = await fetch('/customize-qa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userRequest: userRequest,
+                        currentQuestions: currentQuestions,
+                        context: currentContext
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Update current questions and display
+                currentQuestions = data.questions;
+                displayQuestions(data);
+                
+                // Clear input
+                document.getElementById('userRequest').value = '';
+                document.getElementById('cacheStatus').textContent = 'Questions customized successfully';
+                
+            } catch (error) {
+                document.getElementById('cacheStatus').textContent = `Error: ${error.message}`;
+            } finally {
+                button.disabled = false;
+                loadingCustom.style.display = 'none';
+            }
+        }
+        // Preload common roles for instant responses with different experience levels
         const commonRoles = [
             'Software Engineer', 'Data Scientist', 'Product Manager', 
             'DevOps Engineer', 'Frontend Developer', 'Backend Developer'
         ];
+        const experienceLevels = ['2+ years', '5+ years'];
         
         // Preload cache on page load
         window.addEventListener('load', () => {
             loadHistory();
             
             commonRoles.forEach(role => {
-                setTimeout(() => {
-                    fetch('/generate-qa', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            method: 'title',
-                            jobTitle: role,
-                            experienceLevel: 'mid'
-                        })
-                    }).then(r => r.json()).then(data => {
-                        qaCache.set(`${role}-mid-`, data);
-                    }).catch(() => {});
-                }, Math.random() * 2000);
+                experienceLevels.forEach(exp => {
+                    setTimeout(() => {
+                        fetch('/generate-qa', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                method: 'title',
+                                jobTitle: role,
+                                experienceLevel: exp
+                            })
+                        }).then(r => r.json()).then(data => {
+                            qaCache.set(`${role.toLowerCase()}-${exp}-`, data);
+                        }).catch(() => {});
+                    }, Math.random() * 3000);
+                });
             });
         });
         

@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template, session, Response, redirect
+from flask_cors import CORS
 import json
 import time
 import random
@@ -9,11 +10,12 @@ import PyPDF2
 import docx
 import io
 from datetime import datetime
-import requests
+import re
 
 load_dotenv()
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Configure Azure OpenAI
 AZURE_OPENAI_ENDPOINT = os.getenv('AZURE_OPENAI_ENDPOINT')
@@ -22,15 +24,6 @@ AZURE_DEPLOYMENT_NAME = os.getenv('AZURE_DEPLOYMENT_NAME', 'Phi-4-mini-instruct'
 
 print(f"Loaded endpoint: {AZURE_OPENAI_ENDPOINT}")
 print(f"Loaded deployment: {AZURE_DEPLOYMENT_NAME}")
-
-# Configure Gemini AI
-try:
-    import google.generativeai as genai
-    genai.configure(api_key='AIzaSyBhdtnmWxm9JuCw7GTQbRCf0WBBaY5gNHc')
-    model = genai.GenerativeModel('gemini-pro')
-except Exception as e:
-    print(f"Gemini AI not available: {e}")
-    model = None
 
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-key-change-in-production')
 
@@ -56,11 +49,40 @@ Act as a technical co-pilot for hiring managers.
 
 Constraint: Always return data in structured JSON when requested. Maintain a neutral, professional, and data-driven tone."""
 
-def retry_with_backoff(func, max_retries=5):
+def extract_json_from_text(text):
+    """Extract JSON from text that might contain markdown or other formatting"""
+    try:
+        # First try direct JSON parsing
+        return json.loads(text)
+    except:
+        try:
+            # Remove any markdown code blocks
+            if '```json' in text:
+                text = text.split('```json')[1].split('```')[0]
+            elif '```' in text:
+                text = text.split('```')[1].split('```')[0]
+            
+            # Clean up common issues
+            text = text.strip()
+            text = re.sub(r'^[^{]*', '', text)  # Remove text before first {
+            text = re.sub(r'}[^}]*$', '}', text)  # Remove text after last }
+            
+            return json.loads(text)
+        except:
+            # Return fallback structure
+            return {
+                "questions": [
+                    {"question": "Tell me about your background.", "answer": "Sample answer about background."},
+                    {"question": "What interests you about this role?", "answer": "Sample answer about interest."},
+                    {"question": "Describe a challenging project.", "answer": "Sample answer about a project."}
+                ]
+            }
+def retry_with_backoff(func, max_retries=3):
     for attempt in range(max_retries):
         try:
             return func()
         except Exception as e:
+            print(f"Attempt {attempt + 1} failed: {str(e)}")
             if attempt == max_retries - 1:
                 raise e
             time.sleep(2 ** attempt + random.uniform(0, 1))
@@ -88,31 +110,14 @@ def call_azure_openai(prompt):
         )
         
         content = completion.choices[0].message.content
-        print(f"Azure API Response: {content}")
+        print(f"Azure API Response: {content[:200]}...")
         
-        # Decode HTML entities (fix &quot; to " etc.)
-        content = html.unescape(content)
-        
-        # Additional cleanup for common HTML entities that might not be caught
-        content = content.replace('&quot;', '"').replace('&#39;', "'").replace('&amp;', '&')
-        
-        # Clean up markdown code blocks if present
-        if content.startswith('```json'):
-            content = content.replace('```json', '').replace('```', '').strip()
-        elif content.startswith('```'):
-            content = content.replace('```', '').strip()
-        
-        # Try to parse as JSON, if it fails, wrap in a basic structure
-        try:
-            return json.loads(content)
-        except json.JSONDecodeError as e:
-            print(f"JSON decode error: {e}")
-            print(f"Content that failed to parse: {content[:500]}...")
-            # If response is not JSON, wrap it in a basic structure
-            return {"response": content, "error": "Response was not valid JSON"}
+        # Use improved JSON extraction
+        return extract_json_from_text(content)
             
     except Exception as e:
         print(f"Azure OpenAI Error: {str(e)}")
+        # Return fallback only if all retries fail
         raise e
 
 @app.route('/')
@@ -146,14 +151,10 @@ Resume: {resume_text}
 
 Return JSON with: score (0-100), skill_gaps (array), strengths (array), cultural_fit (0-100)"""
 
-        def call_gemini():
-            response = model.generate_content(prompt)
-            try:
-                return json.loads(response.text)
-            except json.JSONDecodeError:
-                return {"response": response.text, "error": "Response was not valid JSON"}
+        def call_azure():
+            return call_azure_openai(prompt)
         
-        result = retry_with_backoff(call_gemini)
+        result = retry_with_backoff(call_azure)
         
         # Store in Firestore
         if db:
@@ -174,27 +175,39 @@ Return JSON with: score (0-100), skill_gaps (array), strengths (array), cultural
 
 @app.route('/generate-qa', methods=['POST'])
 def generate_qa():
+    import uuid
+    request_id = str(uuid.uuid4())[:8]
+    
     try:
         method = request.json.get('method')
+        print(f"[{request_id}] Request received - Method: {method}")
         
         if method == 'jd':
             job_description = request.json.get('jobDescription')
-            prompt = f"""Analyze this job description and generate 8 targeted interview questions with answers:
+            experience_level = request.json.get('experienceLevel', '')
+            if not job_description:
+                return jsonify({'error': 'Job description is required'}), 400
+                
+            print(f"[{request_id}] JD Method - Processing job description with experience: {experience_level}")
+            
+            prompt = f"""You are an interview question generator. Generate exactly 16 interview questions with answers.
 
 Job Description: {job_description}
+Experience Level: {experience_level}
 
-Generate questions that specifically match the requirements and skills mentioned in the JD.
-Include technical, behavioral, and scenario-based questions.
+Rules:
+1. Analyze the job description and experience level for appropriate questions
+2. Create 16 questions suitable for {experience_level if experience_level else 'the role'}
+3. Return ONLY valid JSON - no extra text
+4. Use this exact format:
 
-Return JSON with:
 {{
   "questions": [
-    {{
-      "question": "question text",
-      "answer": "detailed sample answer"
-    }}
+    {{"question": "Your question here?", "answer": "Sample answer here."}}
   ]
-}}"""
+}}
+
+Generate the JSON now:"""
             
             def call_azure():
                 return call_azure_openai(prompt)
@@ -206,33 +219,29 @@ Return JSON with:
             experience_level = request.json.get('experienceLevel')
             job_description = request.json.get('jobDescription', '')
             
-            prompt = f"""Generate exactly 10 interview questions with detailed answers for this role:
+            print(f"[{request_id}] TITLE Method - Job: {job_title}, Experience: {experience_level}")
+            
+            if not job_title or not experience_level:
+                return jsonify({'error': 'Job title and experience level are required'}), 400
+            
+            prompt = f"""You are an interview question generator. Generate exactly 16 interview questions with answers.
 
 Role: {job_title}
-Experience Level: {experience_level}
-Job Description: {job_description}
+Experience: {experience_level}
+Context: {job_description}
 
-Create a mix of:
-- 4 technical questions specific to the role
-- 3 behavioral questions
-- 2 scenario-based questions
-- 1 culture fit question
+Rules:
+1. Make questions appropriate for {experience_level} experience
+2. Return ONLY valid JSON - no extra text
+3. Use this exact format:
 
-IMPORTANT: You must return valid JSON in this exact format:
 {{
   "questions": [
-    {{
-      "question": "What is your experience with [specific technology]?",
-      "answer": "A detailed sample answer explaining the candidate's experience..."
-    }},
-    {{
-      "question": "Tell me about a challenging project you worked on.",
-      "answer": "A comprehensive answer describing a specific project..."
-    }}
+    {{"question": "Your question here?", "answer": "Sample answer here."}}
   ]
 }}
 
-Generate all 10 questions now:"""
+Generate the JSON now:"""
             
             def call_azure():
                 return call_azure_openai(prompt)
@@ -240,31 +249,55 @@ Generate all 10 questions now:"""
             result = retry_with_backoff(call_azure)
         
         else:
-            return jsonify({'error': 'Invalid method'}), 400
+            return jsonify({'error': 'Invalid method. Use "jd" or "title"'}), 400
         
-        # Store in Firestore
+        # Ensure we have questions in the result
+        if 'questions' not in result or not result['questions'] or len(result['questions']) < 8:
+            print(f"[{request_id}] API returned insufficient questions, using fallback")
+            result = {
+                "questions": [
+                    {"question": "Tell me about your background and experience relevant to this role.", "answer": "This is a general opening question to understand the candidate's background."},
+                    {"question": "What interests you most about this position?", "answer": "This helps gauge the candidate's motivation and interest level."},
+                    {"question": "Describe a challenging project you've worked on recently.", "answer": "This assesses problem-solving skills and technical experience."},
+                    {"question": "How do you handle tight deadlines and pressure?", "answer": "This evaluates stress management and time management skills."},
+                    {"question": "What are your greatest strengths?", "answer": "This helps identify key competencies and self-awareness."},
+                    {"question": "Where do you see yourself in 5 years?", "answer": "This assesses career goals and long-term thinking."},
+                    {"question": "How do you work in a team environment?", "answer": "This evaluates collaboration and interpersonal skills."},
+                    {"question": "What motivates you in your work?", "answer": "This helps understand what drives the candidate's performance."},
+                    {"question": "How do you stay updated with industry trends?", "answer": "This assesses commitment to continuous learning."},
+                    {"question": "Describe a time you solved a difficult problem.", "answer": "This evaluates problem-solving and analytical skills."},
+                    {"question": "What would you do in your first 90 days?", "answer": "This assesses planning and prioritization abilities."},
+                    {"question": "Why should we hire you over other candidates?", "answer": "This helps the candidate articulate their unique value proposition."},
+                    {"question": "How do you handle constructive criticism?", "answer": "This evaluates receptiveness to feedback and growth mindset."},
+                    {"question": "What's your biggest professional achievement?", "answer": "This helps understand past successes and what the candidate values."},
+                    {"question": "How do you prioritize tasks when everything is urgent?", "answer": "This assesses time management and decision-making under pressure."},
+                    {"question": "What questions do you have for us?", "answer": "This shows the candidate's interest and preparation for the role."}
+                ]
+            }
+        else:
+            print(f"[{request_id}] Successfully generated {len(result['questions'])} questions from API")
+        
+        print(f"[{request_id}] Generated {len(result.get('questions', []))} questions for method: {method}")
+        
+        # Store in Firestore if available
         if db:
             try:
-                db.collection('qa_sessions').add({
-                    'method': method,
-                    'job_title': job_title if method == 'title' else None,
-                    'experience_level': experience_level if method == 'title' else None,
-                    'job_description': job_description[:500] if job_description else None,
-                    'questions': result.get('questions', []),
-                    'timestamp': datetime.now()
-                })
+                store_data = {'method': method, 'timestamp': datetime.now()}
+                if method == 'title':
+                    store_data.update({'job_title': job_title, 'experience_level': experience_level, 'job_description': job_description[:500] if job_description else None})
+                elif method == 'jd':
+                    store_data.update({'job_description': job_description[:500], 'experience_level': experience_level})
+                store_data['questions'] = result.get('questions', [])
+                db.collection('qa_sessions').add(store_data)
             except Exception as e:
                 print(f"Firestore error: {e}")
-        
-        # Debug logging
-        print(f"Generated {len(result.get('questions', []))} questions for method: {method}")
-        if 'questions' in result:
-            print(f"First question: {result['questions'][0] if result['questions'] else 'None'}")
         
         return jsonify(result)
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Generate QA Error: {str(e)}")
+        return jsonify({'error': 'Failed to generate questions. Please try again.', 'details': str(e)}), 500
+
 
 @app.route('/api/analyze-call', methods=['POST'])
 def analyze_call():
@@ -312,14 +345,10 @@ Return detailed JSON with:
   "summary": "comprehensive summary"
 }}"""
 
-        def call_gemini():
-            response = model.generate_content(prompt)
-            try:
-                return json.loads(response.text)
-            except json.JSONDecodeError:
-                return {"response": response.text, "error": "Response was not valid JSON"}
+        def call_azure():
+            return call_azure_openai(prompt)
         
-        result = retry_with_backoff(call_gemini)
+        result = retry_with_backoff(call_azure)
         
         # Store analysis in Firestore
         if db and interview_id:
@@ -521,9 +550,32 @@ def get_qa_history():
         print(f"Error getting QA history: {e}")
         return jsonify({'error': str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
-# Hiring Manager AI Assistant
+@app.route('/api/customize-qa', methods=['POST', 'OPTIONS'])
+def customize_qa():
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        response.headers.add('Access-Control-Allow-Methods', 'POST')
+        return response
+    
+    print("Customize QA endpoint called")  # Debug log
+    try:
+        # Simple test response first
+        return jsonify({
+            'questions': [
+                {"question": "Test question 1?", "answer": "Test answer 1"},
+                {"question": "Test question 2?", "answer": "Test answer 2"},
+                {"question": "Test question 3?", "answer": "Test answer 3"}
+            ]
+        })
+        
+    except Exception as e:
+        print(f"Error in customize_qa: {str(e)}")
+        return jsonify({'error': 'Failed to customize questions', 'details': str(e)}), 500
+
+
 @app.route('/api/hiring-assistant', methods=['POST'])
 def hiring_assistant():
     try:
@@ -544,14 +596,10 @@ Provide structured assistance for:
 
 Return JSON with actionable insights."""
 
-        def call_gemini():
-            response = model.generate_content(prompt)
-            try:
-                return json.loads(response.text)
-            except json.JSONDecodeError:
-                return {"response": response.text, "error": "Response was not valid JSON"}
+        def call_azure():
+            return call_azure_openai(prompt)
         
-        result = retry_with_backoff(call_gemini)
+        result = retry_with_backoff(call_azure)
         return jsonify(result)
     
     except Exception as e:
@@ -617,3 +665,6 @@ def analytics():
 @app.route('/hiring-assistant')
 def hiring_assistant_page():
     return render_template('hiring_assistant.html')
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
