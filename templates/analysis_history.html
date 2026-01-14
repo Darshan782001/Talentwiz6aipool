@@ -1,0 +1,92 @@
+<!-- Copyright 2026 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis History - TalentCore AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand d-flex flex-column align-items-center" href="/">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="TalentCore AI" height="30">
+                <small>TalentCore AI</small>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 100px;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-history me-2"></i>Call Analysis History</h2>
+            <a href="/call-analysis" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> New Analysis
+            </a>
+        </div>
+
+        <div id="historyContainer">
+            <div class="text-center">
+                <div class="spinner-border" role="status"></div>
+                <p>Loading history...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/analysis-history');
+                const data = await response.json();
+                
+                const container = document.getElementById('historyContainer');
+                
+                if (data.history && data.history.length > 0) {
+                    let html = '<div class="row">';
+                    data.history.forEach(item => {
+                        const date = new Date(item.timestamp._seconds * 1000).toLocaleDateString();
+                        html += `
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Interview: ${item.interview_id}</h6>
+                                        <p class="card-text text-muted small">${item.jd_preview}</p>
+                                        <p class="card-text">${item.analysis_summary}</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">${date}</small>
+                                            <a href="/call-analysis?interview_id=${item.interview_id}" class="btn btn-sm btn-outline-primary">View</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                            <h4>No Analysis History</h4>
+                            <p class="text-muted">Start by analyzing your first call recording.</p>
+                            <a href="/call-analysis" class="btn btn-primary">Analyze Call</a>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('historyContainer').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error loading history: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', loadHistory);
+    </script>
+</body>
+</html>

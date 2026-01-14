@@ -190,20 +190,38 @@ def generate_qa():
                 
             print(f"[{request_id}] JD Method - Processing job description with experience: {experience_level}")
             
-            prompt = f"""You are an interview question generator. Generate exactly 16 interview questions with answers.
+            prompt = f"""You are a senior technical recruiter and interview architect. Generate exactly 16 comprehensive interview questions with detailed answers.
 
 Job Description: {job_description}
 Experience Level: {experience_level}
 
-Rules:
-1. Analyze the job description and experience level for appropriate questions
-2. Create 16 questions suitable for {experience_level if experience_level else 'the role'}
-3. Return ONLY valid JSON - no extra text
-4. Use this exact format:
+Instructions:
+1. Extract key technical skills, tools, frameworks, and domain knowledge from the JD
+2. Create questions that test both technical depth and practical application
+3. Include scenario-based questions that mirror real job challenges
+4. Balance technical competency with behavioral and problem-solving skills
+5. Ensure questions are appropriate for {experience_level if experience_level else 'mid-level'} professionals
+6. Include questions about:
+   - Core technical skills mentioned in JD
+   - System design/architecture (for senior roles)
+   - Problem-solving scenarios
+   - Best practices and optimization
+   - Team collaboration and leadership
+   - Industry trends and continuous learning
+
+Question Categories (distribute across 16 questions):
+- Technical Skills (6 questions): Deep dive into specific technologies/tools
+- Problem Solving (3 questions): Real-world scenarios and challenges
+- System Design (2 questions): Architecture and scalability considerations
+- Best Practices (2 questions): Code quality, security, performance
+- Behavioral (2 questions): Leadership, teamwork, communication
+- Industry Knowledge (1 question): Trends, future outlook
+
+Return ONLY valid JSON with detailed, professional answers:
 
 {{
   "questions": [
-    {{"question": "Your question here?", "answer": "Sample answer here."}}
+    {{"question": "Technical question with specific context?", "answer": "Comprehensive answer covering key concepts, best practices, and real-world applications. Include specific examples and demonstrate deep understanding."}}
   ]
 }}
 
@@ -224,20 +242,37 @@ Generate the JSON now:"""
             if not job_title or not experience_level:
                 return jsonify({'error': 'Job title and experience level are required'}), 400
             
-            prompt = f"""You are an interview question generator. Generate exactly 16 interview questions with answers.
+            prompt = f"""You are a senior technical recruiter specializing in {job_title} roles. Generate exactly 16 comprehensive interview questions with detailed answers.
 
 Role: {job_title}
-Experience: {experience_level}
-Context: {job_description}
+Experience Level: {experience_level}
+Additional Context: {job_description}
 
-Rules:
-1. Make questions appropriate for {experience_level} experience
-2. Return ONLY valid JSON - no extra text
-3. Use this exact format:
+Instructions:
+1. Create role-specific questions that assess core competencies for {job_title}
+2. Tailor complexity and depth to {experience_level} level
+3. Include both technical and behavioral questions relevant to the role
+4. Focus on practical skills and real-world applications
+5. Include scenario-based questions that test problem-solving abilities
+
+Question Distribution for {job_title}:
+- Technical Expertise (7 questions): Core skills, tools, methodologies
+- Problem Solving (3 questions): Real challenges in {job_title} role
+- System/Process Design (2 questions): Architecture, workflow optimization
+- Best Practices (2 questions): Quality, efficiency, security considerations
+- Leadership/Collaboration (2 questions): Team dynamics, stakeholder management
+
+Ensure questions are:
+- Specific to {job_title} responsibilities
+- Appropriate for {experience_level} professionals
+- Focused on practical, job-relevant scenarios
+- Designed to reveal both technical depth and soft skills
+
+Return ONLY valid JSON with comprehensive, professional answers:
 
 {{
   "questions": [
-    {{"question": "Your question here?", "answer": "Sample answer here."}}
+    {{"question": "Role-specific technical question with context?", "answer": "Detailed answer demonstrating expertise, including best practices, common pitfalls, and real-world examples relevant to {job_title}."}}
   ]
 }}
 
@@ -256,22 +291,22 @@ Generate the JSON now:"""
             print(f"[{request_id}] API returned insufficient questions, using fallback")
             result = {
                 "questions": [
-                    {"question": "Tell me about your background and experience relevant to this role.", "answer": "This is a general opening question to understand the candidate's background."},
-                    {"question": "What interests you most about this position?", "answer": "This helps gauge the candidate's motivation and interest level."},
-                    {"question": "Describe a challenging project you've worked on recently.", "answer": "This assesses problem-solving skills and technical experience."},
-                    {"question": "How do you handle tight deadlines and pressure?", "answer": "This evaluates stress management and time management skills."},
-                    {"question": "What are your greatest strengths?", "answer": "This helps identify key competencies and self-awareness."},
-                    {"question": "Where do you see yourself in 5 years?", "answer": "This assesses career goals and long-term thinking."},
-                    {"question": "How do you work in a team environment?", "answer": "This evaluates collaboration and interpersonal skills."},
-                    {"question": "What motivates you in your work?", "answer": "This helps understand what drives the candidate's performance."},
-                    {"question": "How do you stay updated with industry trends?", "answer": "This assesses commitment to continuous learning."},
-                    {"question": "Describe a time you solved a difficult problem.", "answer": "This evaluates problem-solving and analytical skills."},
-                    {"question": "What would you do in your first 90 days?", "answer": "This assesses planning and prioritization abilities."},
-                    {"question": "Why should we hire you over other candidates?", "answer": "This helps the candidate articulate their unique value proposition."},
-                    {"question": "How do you handle constructive criticism?", "answer": "This evaluates receptiveness to feedback and growth mindset."},
-                    {"question": "What's your biggest professional achievement?", "answer": "This helps understand past successes and what the candidate values."},
-                    {"question": "How do you prioritize tasks when everything is urgent?", "answer": "This assesses time management and decision-making under pressure."},
-                    {"question": "What questions do you have for us?", "answer": "This shows the candidate's interest and preparation for the role."}
+                    {"question": "Walk me through your technical background and how it aligns with our requirements.", "answer": "A strong candidate should provide a structured overview of their technical journey, highlighting relevant technologies, projects, and achievements that directly relate to the job requirements. They should demonstrate progression in complexity and responsibility."},
+                    {"question": "Describe a complex technical challenge you've solved recently. What was your approach?", "answer": "Look for systematic problem-solving methodology: problem analysis, research, solution design, implementation, and validation. The candidate should demonstrate technical depth, creativity, and ability to handle ambiguity."},
+                    {"question": "How do you ensure code quality and maintainability in your projects?", "answer": "Expect discussion of best practices like code reviews, testing strategies (unit, integration, e2e), documentation, design patterns, SOLID principles, and continuous integration. Shows professional maturity."},
+                    {"question": "Explain a time when you had to optimize system performance. What metrics did you use?", "answer": "Candidate should demonstrate understanding of performance bottlenecks, profiling tools, optimization techniques, and measurable outcomes. Look for data-driven approach and understanding of trade-offs."},
+                    {"question": "How do you approach learning new technologies or frameworks required for a project?", "answer": "Strong answer includes structured learning approach: documentation review, hands-on experimentation, community resources, proof-of-concepts, and knowledge sharing. Shows adaptability and growth mindset."},
+                    {"question": "Describe your experience with version control and collaborative development workflows.", "answer": "Should cover Git workflows (GitFlow, feature branches), code review processes, merge strategies, conflict resolution, and team collaboration practices. Essential for team environments."},
+                    {"question": "How do you handle technical debt in your projects?", "answer": "Look for understanding of technical debt impact, prioritization strategies, refactoring approaches, and balance between feature delivery and code health. Shows long-term thinking."},
+                    {"question": "Explain your approach to testing and quality assurance.", "answer": "Should cover testing pyramid, different testing types, automation strategies, TDD/BDD practices, and quality metrics. Demonstrates commitment to reliable software delivery."},
+                    {"question": "How do you stay current with industry trends and emerging technologies?", "answer": "Expect mention of professional development activities: conferences, courses, blogs, open source contributions, experimentation. Shows commitment to continuous learning."},
+                    {"question": "Describe a situation where you had to work with cross-functional teams.", "answer": "Look for communication skills, stakeholder management, requirement gathering, and ability to translate technical concepts for non-technical audiences. Critical for most roles."},
+                    {"question": "How do you approach system design and architecture decisions?", "answer": "Should demonstrate understanding of scalability, reliability, maintainability, security considerations, and trade-off analysis. Look for systematic thinking and experience with design patterns."},
+                    {"question": "Tell me about a time you had to debug a critical production issue.", "answer": "Expect structured debugging approach: issue reproduction, log analysis, monitoring tools usage, root cause analysis, and prevention strategies. Shows problem-solving under pressure."},
+                    {"question": "How do you ensure security best practices in your development work?", "answer": "Should cover secure coding practices, vulnerability assessment, authentication/authorization, data protection, and security testing. Increasingly important across all roles."},
+                    {"question": "Describe your experience with agile development methodologies.", "answer": "Look for understanding of agile principles, experience with ceremonies (standups, retrospectives, planning), collaboration tools, and ability to work in iterative cycles."},
+                    {"question": "How do you handle conflicting priorities and tight deadlines?", "answer": "Should demonstrate time management, stakeholder communication, risk assessment, and ability to make informed trade-offs while maintaining quality standards."},
+                    {"question": "What questions do you have about our technical stack, team structure, or development processes?", "answer": "Strong candidates ask thoughtful questions about technology choices, team dynamics, growth opportunities, and company culture. Shows genuine interest and preparation."}
                 ]
             }
         else:
@@ -302,47 +337,56 @@ Generate the JSON now:"""
 @app.route('/api/analyze-call', methods=['POST'])
 def analyze_call():
     try:
-        transcript = request.json.get('transcript')
-        interview_id = request.json.get('interview_id')
+        # Handle both JSON and form data
+        if request.is_json:
+            transcript = request.json.get('transcript')
+            interview_id = request.json.get('interview_id')
+            jd_text = request.json.get('jd', '')
+        else:
+            # Handle file upload
+            jd_text = request.form.get('jd', '')
+            interview_id = request.form.get('interview_id')
+            audio_file = request.files.get('audio')
+            
+            if not audio_file:
+                return jsonify({'error': 'No audio file provided'}), 400
+            
+            # Mock transcript extraction (replace with actual speech-to-text)
+            transcript = f"Mock transcript from {audio_file.filename}. This would contain the actual conversation content from the audio file."
+        
+        if not transcript:
+            return jsonify({'error': 'No transcript provided'}), 400
         
         prompt = f"""{SYSTEM_PROMPT}
 
-Analyze this interview transcript for comprehensive insights:
+Analyze this interview transcript against the job description:
 
-{transcript}
+Job Description: {jd_text}
+Transcript: {transcript}
 
 Return detailed JSON with:
 {{
-  "sentiment_analysis": {{
-    "overall_score": 0-100,
-    "trend": "positive|neutral|negative",
-    "confidence_level": 0-100,
-    "emotional_markers": ["marker1", "marker2"]
-  }},
-  "engagement_metrics": {{
-    "engagement_score": 0-100,
-    "response_quality": 0-100,
-    "communication_clarity": 0-100,
-    "enthusiasm_level": 0-100
-  }},
-  "technical_assessment": {{
-    "technical_competency": 0-100,
-    "red_flags": ["flag1", "flag2"],
-    "strengths": ["strength1", "strength2"],
-    "knowledge_gaps": ["gap1", "gap2"]
-  }},
-  "behavioral_insights": {{
-    "leadership_potential": 0-100,
-    "problem_solving": 0-100,
-    "cultural_fit": 0-100,
-    "communication_style": "description"
-  }},
-  "recommendations": {{
-    "hire_recommendation": "strong_yes|yes|maybe|no|strong_no",
-    "next_steps": ["step1", "step2"],
-    "areas_to_probe": ["area1", "area2"]
-  }},
-  "summary": "comprehensive summary"
+  "transcript": "{transcript[:500]}...",
+  "nbro": "Overall recommendation for next round",
+  "analysis": {{
+    "sentiment_analysis": {{
+      "overall_score": 75,
+      "confidence_level": 85
+    }},
+    "engagement_metrics": {{
+      "engagement_score": 80,
+      "communication_clarity": 78
+    }},
+    "skills": [
+      {{
+        "skill": "Technical Knowledge",
+        "score": 82,
+        "feedback": "Strong understanding demonstrated",
+        "recommendations": ["Continue technical deep-dive"]
+      }}
+    ],
+    "summary": "Comprehensive analysis summary"
+  }}
 }}"""
 
         def call_azure():
@@ -350,19 +394,67 @@ Return detailed JSON with:
         
         result = retry_with_backoff(call_azure)
         
+        # Generate interview ID if not provided
+        if not interview_id:
+            interview_id = f"call_{int(time.time())}"
+        
         # Store analysis in Firestore
-        if db and interview_id:
+        if db:
             try:
-                db.collection('interviews').document(interview_id).update({
+                db.collection('call_analyses').document(interview_id).set({
+                    'jd_text': jd_text[:500],
+                    'transcript': transcript[:1000],
                     'analysis': result,
-                    'status': 'analyzed',
-                    'analyzed_at': datetime.now()
+                    'interview_id': interview_id,
+                    'timestamp': datetime.now()
                 })
             except Exception as e:
                 print(f"Firestore error: {e}")
         
         return jsonify(result)
     
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/get-analysis')
+def get_analysis():
+    try:
+        interview_id = request.args.get('interview_id')
+        if not interview_id:
+            return jsonify({'error': 'Interview ID required'}), 400
+        
+        if db:
+            doc = db.collection('call_analyses').document(interview_id).get()
+            if doc.exists:
+                return jsonify(doc.to_dict())
+        
+        return jsonify({'error': 'Analysis not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/analysis-history')
+def analysis_history():
+    return render_template('analysis_history.html')
+
+@app.route('/api/analysis-history')
+def get_analysis_history():
+    try:
+        if not db:
+            return jsonify({'history': []})
+        
+        analyses = db.collection('call_analyses').order_by('timestamp', direction=firestore.Query.DESCENDING).limit(20).get()
+        
+        history = []
+        for analysis in analyses:
+            data = analysis.to_dict()
+            history.append({
+                'interview_id': data.get('interview_id'),
+                'timestamp': data.get('timestamp'),
+                'jd_preview': data.get('jd_text', '')[:100] + '...' if data.get('jd_text') else 'No JD',
+                'analysis_summary': data.get('analysis', {}).get('summary', 'No summary')[:100] + '...'
+            })
+        
+        return jsonify({'history': history})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

@@ -1,3 +1,4 @@
+<!-- Copyright 2026 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,20 +13,32 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light fixed-top">
         <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-brain me-2"></i>TalentCore AI
+            <a class="navbar-brand d-flex flex-column align-items-center" href="/">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="TalentCore AI" height="30">
+                <small>TalentCore AI</small>
             </a>
         </div>
     </nav>
 
     <div class="container" style="margin-top: 100px;">
         <h2><i class="fas fa-chart-line me-2"></i>Call Analysis</h2>
+        <div class="mb-3">
+            <a href="/analysis-history" class="btn btn-outline-secondary">
+                <i class="fas fa-history me-1"></i> View Analysis History
+            </a>
+        </div>
         <div class="row">
             <div class="col-md-6">
-                <form id="analysisForm">
+                <form id="analysisForm" enctype="multipart/form-data">
                     <div class="mb-3">
-                        <label for="transcript" class="form-label">Interview Transcript</label>
-                        <textarea class="form-control" id="transcript" rows="12" placeholder="Paste interview transcript here..." required></textarea>
+                        <label for="jd" class="form-label">Job Description (JD)</label>
+                        <textarea class="form-control" id="jd" rows="5" placeholder="Paste or type the job description here..." required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="audioFile" class="form-label">Upload Call Recording (audio)</label>
+                        <input class="form-control" type="file" id="audioFile" accept="audio/*" required>
+                        <div class="form-text">Or drag and drop your audio file here. Supported formats: m4a, mp3, wav, etc.</div>
+                        <div id="dropZone" class="border border-secondary rounded p-3 text-center mt-2" style="background: #f8f9fa; cursor: pointer;">Or drag and drop your audio file here</div>
                     </div>
                     <div class="mb-3">
                         <label for="interviewId" class="form-label">Interview ID (Optional)</label>
@@ -38,6 +51,12 @@
             </div>
             <div class="col-md-6">
                 <div id="results" class="d-none">
+                    <h4>Transcript</h4>
+                    <div id="transcriptBox" class="mb-2" style="max-height:150px;overflow:auto;background:#f8f9fa;border:1px solid #ddd;padding:10px;font-family:monospace;font-size:14px;"></div>
+                    <div id="nbroSection" class="alert alert-warning mb-4 d-none">
+                        <strong>Recommendation for Next Round:</strong> <span id="nbroText"></span>
+                    </div>
+                    <!-- Q&A section removed: no longer in backend response -->
                     <h4>Analysis Results</h4>
                     <div class="card">
                         <div class="card-body">
@@ -52,12 +71,12 @@
                                 <div>Communication: <span id="communication" class="badge bg-warning"></span></div>
                             </div>
                             <div class="mb-3">
-                                <h6>Technical Assessment</h6>
-                                <div>Competency: <span id="technical" class="badge bg-primary"></span></div>
+                                <h6>Skills Assessment</h6>
+                                <div id="skillsTableContainer"></div>
                             </div>
                             <div class="mb-3">
-                                <h6>Recommendation</h6>
-                                <div id="recommendation" class="alert alert-info"></div>
+                                <h6>Summary</h6>
+                                <div id="summary" class="alert alert-info"></div>
                             </div>
                         </div>
                     </div>
@@ -71,43 +90,109 @@
     </div>
 
     <script>
+        // Drag and drop for audio
+        const dropZone = document.getElementById('dropZone');
+        const audioInput = document.getElementById('audioFile');
+        dropZone.addEventListener('click', () => audioInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('bg-light');
+        });
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-light');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-light');
+            if (e.dataTransfer.files.length) {
+                audioInput.files = e.dataTransfer.files;
+            }
+        });
+
+        function displayAnalysis(data) {
+            // Display transcript
+            const transcriptBox = document.getElementById('transcriptBox');
+            transcriptBox.textContent = data.transcript || 'No transcript available.';
+            // Display nbro (overall recommendation)
+            const nbroSection = document.getElementById('nbroSection');
+            const nbroText = document.getElementById('nbroText');
+            if (data.nbro) {
+                nbroText.textContent = data.nbro;
+                nbroSection.classList.remove('d-none');
+            } else {
+                nbroSection.classList.add('d-none');
+            }
+            // Display skills table
+            const skillsTableContainer = document.getElementById('skillsTableContainer');
+            skillsTableContainer.innerHTML = '';
+            if (data.analysis && data.analysis.skills && Array.isArray(data.analysis.skills) && data.analysis.skills.length > 0) {
+                let table = '<table class="table table-bordered table-sm"><thead><tr><th>Skill</th><th>Score</th><th>Feedback</th><th>Recommendations</th></tr></thead><tbody>';
+                data.analysis.skills.forEach(skill => {
+                    table += `<tr><td>${skill.skill || ''}</td><td>${skill.score !== undefined ? skill.score + '%' : ''}</td><td>${skill.feedback || ''}</td><td>${(skill.recommendations || []).join('<br>')}</td></tr>`;
+                });
+                table += '</tbody></table>';
+                skillsTableContainer.innerHTML = table;
+            } else {
+                skillsTableContainer.innerHTML = '<div class="text-muted">No skills assessment available.</div>';
+            }
+            // Display results
+            document.getElementById('sentimentScore').textContent = data.analysis.sentiment_analysis.overall_score + '%';
+            document.getElementById('confidence').textContent = data.analysis.sentiment_analysis.confidence_level + '%';
+            document.getElementById('engagement').textContent = data.analysis.engagement_metrics.engagement_score + '%';
+            document.getElementById('communication').textContent = data.analysis.engagement_metrics.communication_clarity + '%';
+            document.getElementById('summary').textContent = data.analysis.summary || '';
+            document.getElementById('results').classList.remove('d-none');
+        }
+
+        // On page load, check for interview ID and fetch saved analysis
+        window.addEventListener('DOMContentLoaded', async () => {
+            const interviewIdInput = document.getElementById('interviewId');
+            const interviewId = interviewIdInput.value || new URLSearchParams(window.location.search).get('interview_id');
+            if (interviewId) {
+                try {
+                    document.getElementById('loading').classList.remove('d-none');
+                    document.getElementById('results').classList.add('d-none');
+                    const response = await fetch(`/api/get-analysis?interview_id=${encodeURIComponent(interviewId)}`);
+                    const data = await response.json();
+                    if (response.ok) {
+                        displayAnalysis(data.analysis || data);
+                        document.getElementById('loading').classList.add('d-none');
+                    } else {
+                        throw new Error(data.error || 'Failed to load analysis');
+                    }
+                } catch (error) {
+                    document.getElementById('loading').classList.add('d-none');
+                    alert('Error loading analysis: ' + error.message);
+                }
+            }
+        });
+
+        // Handle form submission
         document.getElementById('analysisForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const transcript = document.getElementById('transcript').value;
-            const interviewId = document.getElementById('interviewId').value;
-            
-            document.getElementById('loading').classList.remove('d-none');
-            document.getElementById('results').classList.add('d-none');
+            const formData = new FormData();
+            formData.append('jd', document.getElementById('jd').value);
+            formData.append('audio', document.getElementById('audioFile').files[0]);
+            formData.append('interview_id', document.getElementById('interviewId').value);
             
             try {
+                document.getElementById('loading').classList.remove('d-none');
+                document.getElementById('results').classList.add('d-none');
+                
                 const response = await fetch('/api/analyze-call', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        transcript: transcript,
-                        interview_id: interviewId
-                    })
+                    body: formData
                 });
                 
                 const data = await response.json();
                 
-                if (data.error) {
-                    alert('Error: ' + data.error);
-                    return;
+                if (response.ok) {
+                    displayAnalysis(data);
+                } else {
+                    throw new Error(data.error || 'Analysis failed');
                 }
-                
-                // Display results
-                document.getElementById('sentimentScore').textContent = data.sentiment_analysis.overall_score + '%';
-                document.getElementById('confidence').textContent = data.sentiment_analysis.confidence_level + '%';
-                document.getElementById('engagement').textContent = data.engagement_metrics.engagement_score + '%';
-                document.getElementById('communication').textContent = data.engagement_metrics.communication_clarity + '%';
-                document.getElementById('technical').textContent = data.technical_assessment.technical_competency + '%';
-                document.getElementById('recommendation').textContent = data.recommendations.hire_recommendation;
-                
-                document.getElementById('results').classList.remove('d-none');
             } catch (error) {
                 alert('Error: ' + error.message);
             } finally {
