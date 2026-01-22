@@ -7,3 +7,4 @@ python-docx
 firebase-admin
 openai
 google-generativeai
+azure-storage-blob

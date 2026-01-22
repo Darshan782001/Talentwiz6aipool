@@ -109,20 +109,25 @@ def save_to_azure_storage(data):
 def load_from_azure_storage():
     """Load QA history from Azure Storage"""
     if not blob_service_client:
+        print("Azure Storage client not available")
         return []
     
     try:
         container_name = "qa-history"
+        print(f"Connecting to container: {container_name}")
         container_client = blob_service_client.get_container_client(container_name)
         
         history = []
         blobs = container_client.list_blobs()
+        print("Listing blobs...")
         
         # Get all sessions, sorted by last modified
         blob_list = sorted(blobs, key=lambda x: x.last_modified, reverse=True)
+        print(f"Found {len(blob_list)} blobs")
         
         for blob in blob_list:
             try:
+                print(f"Reading blob: {blob.name}")
                 blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob.name)
                 data = json.loads(blob_client.download_blob().readall())
                 # Add blob name for retrieval
@@ -131,6 +136,7 @@ def load_from_azure_storage():
             except Exception as e:
                 print(f"Error reading blob {blob.name}: {e}")
         
+        print(f"Successfully loaded {len(history)} history items")
         return history
     except Exception as e:
         print(f"Error loading from Azure Storage: {e}")
@@ -706,8 +712,10 @@ def get_qa_session(session_id):
 def get_qa_history():
     """Get Q&A generation history from Azure Storage"""
     try:
+        print("Loading QA history from Azure Storage...")
         # Load from Azure Storage
         history = load_from_azure_storage()
+        print(f"Loaded {len(history)} history items from Azure Storage")
         
         # Format for frontend
         formatted_history = []
@@ -721,6 +729,7 @@ def get_qa_history():
                 'timestamp': item.get('timestamp')
             })
         
+        print(f"Returning {len(formatted_history)} formatted history items")
         return jsonify({'history': formatted_history})
     except Exception as e:
         print(f"Error getting QA history: {e}")
