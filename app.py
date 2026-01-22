@@ -22,10 +22,26 @@ AZURE_OPENAI_ENDPOINT = os.getenv('AZURE_OPENAI_ENDPOINT')
 AZURE_OPENAI_API_KEY = os.getenv('AZURE_OPENAI_API_KEY')
 AZURE_DEPLOYMENT_NAME = os.getenv('AZURE_DEPLOYMENT_NAME', 'Phi-4-mini-instruct')
 
+# Configure Azure Storage
+AZURE_STORAGE_ACCOUNT_NAME = os.getenv('AZURE_STORAGE_ACCOUNT_NAME', 'qageneratorhistory')
+AZURE_STORAGE_ACCOUNT_KEY = os.getenv('AZURE_STORAGE_ACCOUNT_KEY')
+
 print(f"Loaded endpoint: {AZURE_OPENAI_ENDPOINT}")
 print(f"Loaded deployment: {AZURE_DEPLOYMENT_NAME}")
 
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-key-change-in-production')
+
+# Initialize Azure Storage
+try:
+    from azure.storage.blob import BlobServiceClient
+    blob_service_client = BlobServiceClient(
+        account_url=f"https://{AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net",
+        credential=AZURE_STORAGE_ACCOUNT_KEY
+    )
+    print("Azure Storage initialized successfully")
+except Exception as e:
+    print(f"Azure Storage initialization failed: {e}")
+    blob_service_client = None
 
 # Initialize Firestore (optional)
 try:
@@ -55,28 +71,71 @@ def extract_json_from_text(text):
         # First try direct JSON parsing
         return json.loads(text)
     except:
+        # Remove any markdown code blocks
+        if '```json' in text:
+            text = text.split('```json')[1].split('```')[0]
+        elif '```' in text:
+            text = text.split('```')[1].split('```')[0]
+        
+        # Clean up common issues
+        text = text.strip()
+        text = re.sub(r'^[^{]*', '', text)  # Remove text before first {
+        text = re.sub(r'}[^}]*$', '}', text)  # Remove text after last }
+        
+        return json.loads(text)
+def save_to_azure_storage(data):
+    """Save QA session data to Azure Storage"""
+    if not blob_service_client:
+        return
+    
+    try:
+        import uuid
+        container_name = "qa-history"
+        blob_name = f"qa-session-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{str(uuid.uuid4())[:8]}.json"
+        
+        # Create container if it doesn't exist
         try:
-            # Remove any markdown code blocks
-            if '```json' in text:
-                text = text.split('```json')[1].split('```')[0]
-            elif '```' in text:
-                text = text.split('```')[1].split('```')[0]
-            
-            # Clean up common issues
-            text = text.strip()
-            text = re.sub(r'^[^{]*', '', text)  # Remove text before first {
-            text = re.sub(r'}[^}]*$', '}', text)  # Remove text after last }
-            
-            return json.loads(text)
+            blob_service_client.create_container(container_name)
         except:
-            # Return fallback structure
-            return {
-                "questions": [
-                    {"question": "Tell me about your background.", "answer": "Sample answer about background."},
-                    {"question": "What interests you about this role?", "answer": "Sample answer about interest."},
-                    {"question": "Describe a challenging project.", "answer": "Sample answer about a project."}
-                ]
-            }
+            pass  # Container already exists
+        
+        # Upload data
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+        blob_client.upload_blob(json.dumps(data), overwrite=True)
+        print(f"Saved QA session to Azure Storage: {blob_name}")
+    except Exception as e:
+        print(f"Error saving to Azure Storage: {e}")
+
+def load_from_azure_storage():
+    """Load QA history from Azure Storage"""
+    if not blob_service_client:
+        return []
+    
+    try:
+        container_name = "qa-history"
+        container_client = blob_service_client.get_container_client(container_name)
+        
+        history = []
+        blobs = container_client.list_blobs()
+        
+        # Get all sessions, sorted by last modified
+        blob_list = sorted(blobs, key=lambda x: x.last_modified, reverse=True)
+        
+        for blob in blob_list:
+            try:
+                blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob.name)
+                data = json.loads(blob_client.download_blob().readall())
+                # Add blob name for retrieval
+                data['blob_name'] = blob.name
+                history.append(data)
+            except Exception as e:
+                print(f"Error reading blob {blob.name}: {e}")
+        
+        return history
+    except Exception as e:
+        print(f"Error loading from Azure Storage: {e}")
+        return []
+
 def retry_with_backoff(func, max_retries=3):
     for attempt in range(max_retries):
         try:
@@ -179,36 +238,87 @@ def generate_qa():
     request_id = str(uuid.uuid4())[:8]
     
     try:
-        method = request.json.get('method')
-        print(f"[{request_id}] Request received - Method: {method}")
+        # Get parameters from request
+        job_description = request.json.get('jobDescription')
+        experience_level = request.json.get('experienceLevel')
+        skill_level = request.json.get('skillLevel')
+        question_type = request.json.get('questionType')
         
-        if method == 'jd':
-            job_description = request.json.get('jobDescription')
-            experience_level = request.json.get('experienceLevel', '')
-            if not job_description:
-                return jsonify({'error': 'Job description is required'}), 400
-                
-            print(f"[{request_id}] JD Method - Processing job description with experience: {experience_level}")
-            
-            prompt = f"""You are a senior technical recruiter and interview architect. Generate exactly 16 comprehensive interview questions with detailed answers.
+        print(f"[{request_id}] Request received - Experience: {experience_level}, Skill: {skill_level}, Question Type: {question_type}")
 
-Job Description: {job_description}
-Experience Level: {experience_level}
+        # Validation
+        if not job_description:
+            return jsonify({'error': 'Job description is required'}), 400
+        if not experience_level:
+            return jsonify({'error': 'Experience level is required'}), 400
+        if not skill_level:
+            return jsonify({'error': 'Skill level is required'}), 400
+        if not question_type:
+            return jsonify({'error': 'Question type is required'}), 400
 
-Instructions:
-1. Extract key technical skills, tools, frameworks, and domain knowledge from the JD
-2. Create questions that test both technical depth and practical application
-3. Include scenario-based questions that mirror real job challenges
-4. Balance technical competency with behavioral and problem-solving skills
-5. Ensure questions are appropriate for {experience_level if experience_level else 'mid-level'} professionals
-6. Include questions about:
-   - Core technical skills mentioned in JD
-   - System design/architecture (for senior roles)
-   - Problem-solving scenarios
-   - Best practices and optimization
-   - Team collaboration and leadership
-   - Industry trends and continuous learning
+        print(f"[{request_id}] Processing job description with experience: {experience_level}, skill: {skill_level}, question type: {question_type}")
 
+        # Adjust question distribution based on question type
+        if question_type == 'technical':
+            question_distribution = """
+Question Categories (distribute across 16 questions):
+- Technical Skills (12 questions): Deep dive into specific technologies/tools, frameworks, and domain knowledge
+- Problem Solving (2 questions): Technical challenges and solutions
+- System Design (2 questions): Architecture and scalability considerations
+"""
+        elif question_type == 'technical-scenario':
+            question_distribution = """
+Question Categories (distribute across 16 questions):
+- Technical Skills (8 questions): Core technologies, tools, and frameworks
+- Scenario-based Technical (6 questions): Real-world technical scenarios and problem-solving
+- System Design (2 questions): Architecture and scalability considerations
+"""
+        elif question_type == 'technical-coding':
+            question_distribution = """
+Question Categories (distribute across 16 questions):
+- Technical Skills (6 questions): Core technologies, tools, and frameworks
+- Coding Questions (8 questions): Write code snippets, solve algorithms, debug code, explain data structures, code optimization
+- Best Practices (2 questions): Code quality, testing, performance optimization
+
+For coding questions, include:
+- Algorithm implementation questions
+- Data structure problems
+- Code debugging scenarios
+- Code review and optimization
+- Programming logic challenges
+"""
+        elif question_type == 'behavioral':
+            question_distribution = """
+Question Categories (distribute across 16 questions):
+- Behavioral (8 questions): Leadership, teamwork, communication, conflict resolution
+- Problem Solving (4 questions): Real-world scenarios and challenges
+- Best Practices (2 questions): Code quality, security, performance
+- Industry Knowledge (2 questions): Trends, future outlook
+"""
+        elif question_type == 'competency-based':
+            question_distribution = """
+Question Categories (distribute across 16 questions):
+- Competency-based (10 questions): Specific skills, achievements, and experiences
+- Problem Solving (3 questions): Real-world scenarios and challenges
+- Best Practices (2 questions): Quality, efficiency, security considerations
+- Leadership/Collaboration (1 question): Team dynamics, stakeholder management
+"""
+        elif question_type == 'situational':
+            question_distribution = """
+Question Categories (distribute across 16 questions):
+- Situational (10 questions): "What would you do if..." scenarios
+- Problem Solving (4 questions): Real-world scenarios and challenges
+- System Design (2 questions): Architecture and scalability considerations
+"""
+        elif question_type == 'skill-based':
+            question_distribution = """
+Question Categories (distribute across 16 questions):
+- Skill-based (12 questions): Specific technical skills, tools, and methodologies
+- Problem Solving (2 questions): Technical challenges and solutions
+- Best Practices (2 questions): Quality, efficiency, security considerations
+"""
+        else:  # mixed (all question types)
+            question_distribution = """
 Question Categories (distribute across 16 questions):
 - Technical Skills (6 questions): Deep dive into specific technologies/tools
 - Problem Solving (3 questions): Real-world scenarios and challenges
@@ -216,6 +326,31 @@ Question Categories (distribute across 16 questions):
 - Best Practices (2 questions): Code quality, security, performance
 - Behavioral (2 questions): Leadership, teamwork, communication
 - Industry Knowledge (1 question): Trends, future outlook
+"""
+
+        prompt = f"""You are a senior technical recruiter and interview architect. Generate exactly 16 comprehensive interview questions with detailed answers.
+
+Job Description: {job_description}
+Experience Level: {experience_level}
+Skill Level: {skill_level}
+Question Type Focus: {question_type}
+
+Instructions:
+1. Extract key technical skills, tools, frameworks, and domain knowledge from the JD
+2. Create questions that test both technical depth and practical application
+3. Include scenario-based questions that mirror real job challenges
+4. Balance technical competency with behavioral and problem-solving skills
+5. Ensure questions are appropriate for {experience_level} professionals with {skill_level} skill level
+6. Focus on {question_type} style questions
+7. Include questions about:
+   - Core technical skills mentioned in JD
+   - System design/architecture (for senior roles)
+   - Problem-solving scenarios
+   - Best practices and optimization
+   - Team collaboration and leadership
+   - Industry trends and continuous learning
+
+{question_distribution}
 
 Return ONLY valid JSON with detailed, professional answers:
 
@@ -226,103 +361,40 @@ Return ONLY valid JSON with detailed, professional answers:
 }}
 
 Generate the JSON now:"""
-            
-            def call_azure():
-                return call_azure_openai(prompt)
-            
-            result = retry_with_backoff(call_azure)
         
-        elif method == 'title':
-            job_title = request.json.get('jobTitle')
-            experience_level = request.json.get('experienceLevel')
-            job_description = request.json.get('jobDescription', '')
-            
-            print(f"[{request_id}] TITLE Method - Job: {job_title}, Experience: {experience_level}")
-            
-            if not job_title or not experience_level:
-                return jsonify({'error': 'Job title and experience level are required'}), 400
-            
-            prompt = f"""You are a senior technical recruiter specializing in {job_title} roles. Generate exactly 16 comprehensive interview questions with detailed answers.
-
-Role: {job_title}
-Experience Level: {experience_level}
-Additional Context: {job_description}
-
-Instructions:
-1. Create role-specific questions that assess core competencies for {job_title}
-2. Tailor complexity and depth to {experience_level} level
-3. Include both technical and behavioral questions relevant to the role
-4. Focus on practical skills and real-world applications
-5. Include scenario-based questions that test problem-solving abilities
-
-Question Distribution for {job_title}:
-- Technical Expertise (7 questions): Core skills, tools, methodologies
-- Problem Solving (3 questions): Real challenges in {job_title} role
-- System/Process Design (2 questions): Architecture, workflow optimization
-- Best Practices (2 questions): Quality, efficiency, security considerations
-- Leadership/Collaboration (2 questions): Team dynamics, stakeholder management
-
-Ensure questions are:
-- Specific to {job_title} responsibilities
-- Appropriate for {experience_level} professionals
-- Focused on practical, job-relevant scenarios
-- Designed to reveal both technical depth and soft skills
-
-Return ONLY valid JSON with comprehensive, professional answers:
-
-{{
-  "questions": [
-    {{"question": "Role-specific technical question with context?", "answer": "Detailed answer demonstrating expertise, including best practices, common pitfalls, and real-world examples relevant to {job_title}."}}
-  ]
-}}
-
-Generate the JSON now:"""
-            
-            def call_azure():
-                return call_azure_openai(prompt)
-            
-            result = retry_with_backoff(call_azure)
+        def call_azure():
+            return call_azure_openai(prompt)
         
-        else:
-            return jsonify({'error': 'Invalid method. Use "jd" or "title"'}), 400
+        result = retry_with_backoff(call_azure)
         
-        # Ensure we have questions in the result
-        if 'questions' not in result or not result['questions'] or len(result['questions']) < 8:
-            print(f"[{request_id}] API returned insufficient questions, using fallback")
-            result = {
-                "questions": [
-                    {"question": "Walk me through your technical background and how it aligns with our requirements.", "answer": "A strong candidate should provide a structured overview of their technical journey, highlighting relevant technologies, projects, and achievements that directly relate to the job requirements. They should demonstrate progression in complexity and responsibility."},
-                    {"question": "Describe a complex technical challenge you've solved recently. What was your approach?", "answer": "Look for systematic problem-solving methodology: problem analysis, research, solution design, implementation, and validation. The candidate should demonstrate technical depth, creativity, and ability to handle ambiguity."},
-                    {"question": "How do you ensure code quality and maintainability in your projects?", "answer": "Expect discussion of best practices like code reviews, testing strategies (unit, integration, e2e), documentation, design patterns, SOLID principles, and continuous integration. Shows professional maturity."},
-                    {"question": "Explain a time when you had to optimize system performance. What metrics did you use?", "answer": "Candidate should demonstrate understanding of performance bottlenecks, profiling tools, optimization techniques, and measurable outcomes. Look for data-driven approach and understanding of trade-offs."},
-                    {"question": "How do you approach learning new technologies or frameworks required for a project?", "answer": "Strong answer includes structured learning approach: documentation review, hands-on experimentation, community resources, proof-of-concepts, and knowledge sharing. Shows adaptability and growth mindset."},
-                    {"question": "Describe your experience with version control and collaborative development workflows.", "answer": "Should cover Git workflows (GitFlow, feature branches), code review processes, merge strategies, conflict resolution, and team collaboration practices. Essential for team environments."},
-                    {"question": "How do you handle technical debt in your projects?", "answer": "Look for understanding of technical debt impact, prioritization strategies, refactoring approaches, and balance between feature delivery and code health. Shows long-term thinking."},
-                    {"question": "Explain your approach to testing and quality assurance.", "answer": "Should cover testing pyramid, different testing types, automation strategies, TDD/BDD practices, and quality metrics. Demonstrates commitment to reliable software delivery."},
-                    {"question": "How do you stay current with industry trends and emerging technologies?", "answer": "Expect mention of professional development activities: conferences, courses, blogs, open source contributions, experimentation. Shows commitment to continuous learning."},
-                    {"question": "Describe a situation where you had to work with cross-functional teams.", "answer": "Look for communication skills, stakeholder management, requirement gathering, and ability to translate technical concepts for non-technical audiences. Critical for most roles."},
-                    {"question": "How do you approach system design and architecture decisions?", "answer": "Should demonstrate understanding of scalability, reliability, maintainability, security considerations, and trade-off analysis. Look for systematic thinking and experience with design patterns."},
-                    {"question": "Tell me about a time you had to debug a critical production issue.", "answer": "Expect structured debugging approach: issue reproduction, log analysis, monitoring tools usage, root cause analysis, and prevention strategies. Shows problem-solving under pressure."},
-                    {"question": "How do you ensure security best practices in your development work?", "answer": "Should cover secure coding practices, vulnerability assessment, authentication/authorization, data protection, and security testing. Increasingly important across all roles."},
-                    {"question": "Describe your experience with agile development methodologies.", "answer": "Look for understanding of agile principles, experience with ceremonies (standups, retrospectives, planning), collaboration tools, and ability to work in iterative cycles."},
-                    {"question": "How do you handle conflicting priorities and tight deadlines?", "answer": "Should demonstrate time management, stakeholder communication, risk assessment, and ability to make informed trade-offs while maintaining quality standards."},
-                    {"question": "What questions do you have about our technical stack, team structure, or development processes?", "answer": "Strong candidates ask thoughtful questions about technology choices, team dynamics, growth opportunities, and company culture. Shows genuine interest and preparation."}
-                ]
-            }
-        else:
-            print(f"[{request_id}] Successfully generated {len(result['questions'])} questions from API")
+
         
-        print(f"[{request_id}] Generated {len(result.get('questions', []))} questions for method: {method}")
+        print(f"[{request_id}] Generated {len(result.get('questions', []))} questions")
+        
+        # Save to Azure Storage
+        storage_data = {
+            'session_id': request_id,
+            'job_description': job_description[:500],
+            'experience_level': experience_level,
+            'skill_level': skill_level,
+            'question_type': question_type,
+            'questions': result.get('questions', []),
+            'timestamp': datetime.now().isoformat(),
+            'request_id': request_id
+        }
+        save_to_azure_storage(storage_data)
         
         # Store in Firestore if available
         if db:
             try:
-                store_data = {'method': method, 'timestamp': datetime.now()}
-                if method == 'title':
-                    store_data.update({'job_title': job_title, 'experience_level': experience_level, 'job_description': job_description[:500] if job_description else None})
-                elif method == 'jd':
-                    store_data.update({'job_description': job_description[:500], 'experience_level': experience_level})
-                store_data['questions'] = result.get('questions', [])
+                store_data = {
+                    'job_description': job_description[:500],
+                    'experience_level': experience_level,
+                    'skill_level': skill_level,
+                    'question_type': question_type,
+                    'questions': result.get('questions', []),
+                    'timestamp': datetime.now()
+                }
                 db.collection('qa_sessions').add(store_data)
             except Exception as e:
                 print(f"Firestore error: {e}")
@@ -614,30 +686,42 @@ def dashboard_stats():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/qa-history/<session_id>')
+def get_qa_session(session_id):
+    """Get specific QA session details"""
+    try:
+        if not blob_service_client:
+            return jsonify({'error': 'Storage not available'}), 500
+        
+        container_name = "qa-history"
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=session_id)
+        
+        data = json.loads(blob_client.download_blob().readall())
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error getting QA session: {e}")
+        return jsonify({'error': 'Session not found'}), 404
+
 @app.route('/api/qa-history')
 def get_qa_history():
-    """Get Q&A generation history"""
+    """Get Q&A generation history from Azure Storage"""
     try:
-        if not db:
-            print("Firestore not available, returning empty history")
-            return jsonify({'history': []})
+        # Load from Azure Storage
+        history = load_from_azure_storage()
         
-        # Get recent Q&A sessions
-        sessions = db.collection('qa_sessions').order_by('timestamp', direction=firestore.Query.DESCENDING).limit(20).get()
-        
-        history = []
-        for session in sessions:
-            data = session.to_dict()
-            print(f"Session data: {data}")  # Debug logging
-            history.append({
-                'job_title': data.get('job_title', 'Job Description'),
-                'experience_level': data.get('experience_level', ''),
-                'question_count': len(data.get('questions', [])),
-                'timestamp': data.get('timestamp')
+        # Format for frontend
+        formatted_history = []
+        for item in history:
+            formatted_history.append({
+                'session_id': item.get('blob_name', item.get('session_id', item.get('request_id', ''))),
+                'experience_level': item.get('experience_level', ''),
+                'skill_level': item.get('skill_level', ''),
+                'question_type': item.get('question_type', ''),
+                'question_count': len(item.get('questions', [])),
+                'timestamp': item.get('timestamp')
             })
         
-        print(f"Returning {len(history)} history items")  # Debug logging
-        return jsonify({'history': history})
+        return jsonify({'history': formatted_history})
     except Exception as e:
         print(f"Error getting QA history: {e}")
         return jsonify({'error': str(e)}), 500
