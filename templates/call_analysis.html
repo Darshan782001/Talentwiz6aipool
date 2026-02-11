@@ -61,12 +61,12 @@
                     <div class="card">
                         <div class="card-body">
                             <div class="mb-3">
-                                <h6>Sentiment Analysis</h6>
+                                <h6>Analysis</h6>
                                 <div>Overall Score: <span id="sentimentScore" class="badge bg-primary"></span></div>
                                 <div>Confidence: <span id="confidence" class="badge bg-info"></span></div>
                             </div>
                             <div class="mb-3">
-                                <h6>Engagement Metrics</h6>
+                                <h6>Metrics</h6>
                                 <div>Engagement: <span id="engagement" class="badge bg-success"></span></div>
                                 <div>Communication: <span id="communication" class="badge bg-warning"></span></div>
                             </div>
@@ -111,6 +111,8 @@
         });
 
         function displayAnalysis(data) {
+            console.log('Received data:', JSON.stringify(data, null, 2));
+            
             // Display transcript
             const transcriptBox = document.getElementById('transcriptBox');
             transcriptBox.textContent = data.transcript || 'No transcript available.';
@@ -136,12 +138,19 @@
             } else {
                 skillsTableContainer.innerHTML = '<div class="text-muted">No skills assessment available.</div>';
             }
-            // Display results
-            document.getElementById('sentimentScore').textContent = data.analysis.sentiment_analysis.overall_score + '%';
-            document.getElementById('confidence').textContent = data.analysis.sentiment_analysis.confidence_level + '%';
-            document.getElementById('engagement').textContent = data.analysis.engagement_metrics.engagement_score + '%';
-            document.getElementById('communication').textContent = data.analysis.engagement_metrics.communication_clarity + '%';
-            document.getElementById('summary').textContent = data.analysis.summary || '';
+            // Display results with safe access
+            const analysis = data.analysis || {};
+            const analysisData = analysis.Analysis || {};
+            const metricsData = analysis.Metrics || {};
+            
+            console.log('Analysis data:', analysisData);
+            console.log('Metrics data:', metricsData);
+            
+            document.getElementById('sentimentScore').textContent = (analysisData.overall_score || 0) + '%';
+            document.getElementById('confidence').textContent = (analysisData.confidence_level || 0) + '%';
+            document.getElementById('engagement').textContent = (metricsData.engagement_score || 0) + '%';
+            document.getElementById('communication').textContent = (metricsData.communication_clarity || 0) + '%';
+            document.getElementById('summary').textContent = analysis.summary || '';
             document.getElementById('results').classList.remove('d-none');
         }
 

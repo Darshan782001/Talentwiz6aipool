@@ -26,6 +26,12 @@ AZURE_DEPLOYMENT_NAME = os.getenv('AZURE_DEPLOYMENT_NAME', 'Phi-4-mini-instruct'
 AZURE_STORAGE_ACCOUNT_NAME = os.getenv('AZURE_STORAGE_ACCOUNT_NAME', 'qageneratorhistory')
 AZURE_STORAGE_ACCOUNT_KEY = os.getenv('AZURE_STORAGE_ACCOUNT_KEY')
 
+# Configure Azure Speech
+AZURE_SPEECH_KEY = os.getenv('AZURE_SPEECH_KEY')
+AZURE_SPEECH_REGION = os.getenv('AZURE_SPEECH_REGION')
+AZURE_FAST_TRANSCRIPTION_ENDPOINT = os.getenv('AZURE_FAST_TRANSCRIPTION_ENDPOINT')
+AZURE_FAST_TRANSCRIPTION_KEY = os.getenv('AZURE_FAST_TRANSCRIPTION_KEY')
+
 print(f"Loaded endpoint: {AZURE_OPENAI_ENDPOINT}")
 print(f"Loaded deployment: {AZURE_DEPLOYMENT_NAME}")
 
@@ -34,11 +40,15 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-key-change-in-production')
 # Initialize Azure Storage
 try:
     from azure.storage.blob import BlobServiceClient
-    blob_service_client = BlobServiceClient(
-        account_url=f"https://{AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net",
-        credential=AZURE_STORAGE_ACCOUNT_KEY
-    )
-    print("Azure Storage initialized successfully")
+    if AZURE_STORAGE_ACCOUNT_KEY:
+        blob_service_client = BlobServiceClient(
+            account_url=f"https://{AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net",
+            credential=AZURE_STORAGE_ACCOUNT_KEY
+        )
+        print("Azure Storage initialized successfully")
+    else:
+        blob_service_client = None
+        print("Azure Storage credentials not provided")
 except Exception as e:
     print(f"Azure Storage initialization failed: {e}")
     blob_service_client = None
@@ -152,12 +162,68 @@ def retry_with_backoff(func, max_retries=3):
                 raise e
             time.sleep(2 ** attempt + random.uniform(0, 1))
 
+def transcribe_audio(audio_file):
+    """Transcribe audio using Azure Fast Transcription"""
+    try:
+        import requests
+        from requests.adapters import HTTPAdapter
+        from urllib3.util.retry import Retry
+        
+        if AZURE_FAST_TRANSCRIPTION_ENDPOINT and AZURE_FAST_TRANSCRIPTION_KEY:
+            endpoint = f"{AZURE_FAST_TRANSCRIPTION_ENDPOINT}/speechtotext/transcriptions:transcribe?api-version=2024-11-15"
+            
+            headers = {
+                "Ocp-Apim-Subscription-Key": AZURE_FAST_TRANSCRIPTION_KEY,
+                "Accept": "application/json"
+            }
+            
+            audio_file.seek(0)
+            audio_data = audio_file.read()
+            
+            filename = audio_file.filename.lower()
+            if filename.endswith('.m4a'):
+                content_type = "audio/mp4"
+            elif filename.endswith('.mp3'):
+                content_type = "audio/mpeg"
+            else:
+                content_type = "audio/wav"
+            
+            files = {"audio": (audio_file.filename, audio_data, content_type)}
+            data = {"locales": ["en-US"], "profanityFilterMode": "Masked"}
+            
+            # Create session with retry
+            session = requests.Session()
+            retry = Retry(total=3, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+            adapter = HTTPAdapter(max_retries=retry)
+            session.mount('http://', adapter)
+            session.mount('https://', adapter)
+            
+            print(f"Calling: {endpoint}")
+            response = session.post(endpoint, headers=headers, files=files, data=data, timeout=180)
+            
+            print(f"Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                phrases = result.get("combinedPhrases", [])
+                if phrases:
+                    return phrases[0].get("text", "No transcript available")
+                else:
+                    raise Exception("No transcript in response")
+            else:
+                raise Exception(f"API error: {response.status_code} - {response.text}")
+        else:
+            raise Exception("Azure Fast Transcription credentials not configured")
+            
+    except Exception as e:
+        print(f"Transcription error: {e}")
+        raise Exception(f"Failed to transcribe: {str(e)}")
+
 def call_azure_openai(prompt):
     """Call Azure OpenAI API"""
     try:
         from openai import AzureOpenAI
-        import html
-        
+
         client = AzureOpenAI(
             azure_endpoint=AZURE_OPENAI_ENDPOINT,
             api_key=AZURE_OPENAI_API_KEY,
@@ -170,7 +236,7 @@ def call_azure_openai(prompt):
                 {'role': 'system', 'content': SYSTEM_PROMPT},
                 {'role': 'user', 'content': prompt}
             ],
-            max_tokens=2000,
+            max_tokens=1200,
             temperature=0.7
         )
         
@@ -429,41 +495,32 @@ def analyze_call():
             if not audio_file:
                 return jsonify({'error': 'No audio file provided'}), 400
             
-            # Mock transcript extraction (replace with actual speech-to-text)
-            transcript = f"Mock transcript from {audio_file.filename}. This would contain the actual conversation content from the audio file."
+            # Transcribe audio using Azure Speech-to-Text
+            print(f"Transcribing audio file: {audio_file.filename}")
+            transcript = transcribe_audio(audio_file)
         
         if not transcript:
             return jsonify({'error': 'No transcript provided'}), 400
         
-        prompt = f"""{SYSTEM_PROMPT}
+        prompt = f"""Analyze interview based on JD requirements. Return valid JSON:
 
-Analyze this interview transcript against the job description:
+JD: {jd_text[:400]}
+Transcript: {transcript[:800]}
 
-Job Description: {jd_text}
-Transcript: {transcript}
+Provide:
+1. Extract 3-5 key skills from JD
+2. Evaluate each skill based on transcript evidence
+3. Detailed summary (strengths, weaknesses, fit)
 
-Return detailed JSON with:
 {{
-  "transcript": "{transcript[:500]}...",
-  "nbro": "Overall recommendation for next round",
+  "nbro": "Recommend/Maybe/Not Recommend with reason",
   "analysis": {{
-    "sentiment_analysis": {{
-      "overall_score": 75,
-      "confidence_level": 85
-    }},
-    "engagement_metrics": {{
-      "engagement_score": 80,
-      "communication_clarity": 78
-    }},
+    "Analysis": {{"overall_score": <0-100>, "confidence_level": <0-100>}},
+    "Metrics": {{"engagement_score": <0-100>, "communication_clarity": <0-100>}},
     "skills": [
-      {{
-        "skill": "Technical Knowledge",
-        "score": 82,
-        "feedback": "Strong understanding demonstrated",
-        "recommendations": ["Continue technical deep-dive"]
-      }}
+      {{"skill": "<JD skill>", "score": <0-100>, "feedback": "<transcript evidence>", "recommendations": ["<action>"]}}
     ],
-    "summary": "Comprehensive analysis summary"
+    "summary": "<Detailed 3-4 sentence summary covering: technical competency from transcript, communication quality, strengths demonstrated, areas for improvement, overall fit for role>"
   }}
 }}"""
 
@@ -472,9 +529,41 @@ Return detailed JSON with:
         
         result = retry_with_backoff(call_azure)
         
+        # Debug: Print the result structure
+        print(f"Analysis result: {json.dumps(result, indent=2)}")
+        
+        # Add transcript to result
+        result['transcript'] = transcript
+        
         # Generate interview ID if not provided
         if not interview_id:
             interview_id = f"call_{int(time.time())}"
+        
+        # Store analysis in Azure Storage
+        if blob_service_client:
+            try:
+                import uuid
+                container_name = "call-analysis-history"
+                blob_name = f"call-analysis-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{str(uuid.uuid4())[:8]}.json"
+                
+                try:
+                    blob_service_client.create_container(container_name)
+                except:
+                    pass
+                
+                storage_data = {
+                    'interview_id': interview_id,
+                    'jd_text': jd_text[:500],
+                    'transcript': transcript[:1000],
+                    'analysis': result,
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+                blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+                blob_client.upload_blob(json.dumps(storage_data), overwrite=True)
+                print(f"Saved call analysis to Azure Storage: {blob_name}")
+            except Exception as e:
+                print(f"Error saving to Azure Storage: {e}")
         
         # Store analysis in Firestore
         if db:
@@ -501,6 +590,22 @@ def get_analysis():
         if not interview_id:
             return jsonify({'error': 'Interview ID required'}), 400
         
+        # Try Azure Storage first
+        if blob_service_client:
+            try:
+                container_name = "call-analysis-history"
+                container_client = blob_service_client.get_container_client(container_name)
+                blobs = container_client.list_blobs()
+                
+                for blob in blobs:
+                    blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob.name)
+                    data = json.loads(blob_client.download_blob().readall())
+                    if data.get('interview_id') == interview_id:
+                        return jsonify(data)
+            except Exception as e:
+                print(f"Azure Storage error: {e}")
+        
+        # Fallback to Firestore
         if db:
             doc = db.collection('call_analyses').document(interview_id).get()
             if doc.exists:
@@ -517,6 +622,34 @@ def analysis_history():
 @app.route('/api/analysis-history')
 def get_analysis_history():
     try:
+        # Try Azure Storage first
+        if blob_service_client:
+            try:
+                container_name = "call-analysis-history"
+                container_client = blob_service_client.get_container_client(container_name)
+                history = []
+                blobs = container_client.list_blobs()
+                blob_list = sorted(blobs, key=lambda x: x.last_modified, reverse=True)
+                
+                for blob in blob_list[:20]:
+                    try:
+                        blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob.name)
+                        data = json.loads(blob_client.download_blob().readall())
+                        history.append({
+                            'interview_id': data.get('interview_id'),
+                            'timestamp': data.get('timestamp'),
+                            'jd_preview': data.get('jd_text', '')[:100] + '...' if data.get('jd_text') else 'No JD',
+                            'analysis_summary': data.get('analysis', {}).get('analysis', {}).get('summary', 'No summary')[:100] + '...'
+                        })
+                    except:
+                        pass
+                
+                if history:
+                    return jsonify({'history': history})
+            except:
+                pass
+        
+        # Fallback to Firestore
         if not db:
             return jsonify({'history': []})
         
@@ -529,7 +662,7 @@ def get_analysis_history():
                 'interview_id': data.get('interview_id'),
                 'timestamp': data.get('timestamp'),
                 'jd_preview': data.get('jd_text', '')[:100] + '...' if data.get('jd_text') else 'No JD',
-                'analysis_summary': data.get('analysis', {}).get('summary', 'No summary')[:100] + '...'
+                'analysis_summary': data.get('analysis', {}).get('analysis', {}).get('summary', 'No summary')[:100] + '...'
             })
         
         return jsonify({'history': history})
