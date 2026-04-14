@@ -4,153 +4,502 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - TalentCore AI</title>
+    <title>Dashboard - Agent2Hire</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+    <style>
+        body {
+            background: #f4f6f9;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 260px;
+            height: 100vh;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            padding: 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            padding: 1.5rem 1.5rem 1.25rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+        .sidebar-brand img {
+            height: 28px;
+            border-radius: 6px;
+        }
+        .sidebar-brand-text {
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .sidebar-brand-text span {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: #94a3b8;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-top: 1px;
+        }
+
+        .sidebar-section {
+            padding: 1.25rem 1rem 0.5rem;
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #94a3b8;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 0 0.75rem;
+            margin: 0;
+        }
+        .sidebar-nav li {
+            margin-bottom: 2px;
+        }
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 0.75rem;
+            border-radius: 8px;
+            color: #475569;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+        .sidebar-nav a:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+        .sidebar-nav a.active {
+            background: #f0fdfa;
+            color: #0d9488;
+            font-weight: 600;
+        }
+        .sidebar-nav a i {
+            width: 18px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 1.25rem 1.5rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        .sidebar-footer a {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            text-decoration: none;
+        }
+        .sidebar-footer a:hover {
+            color: #0d9488;
+        }
+
+        /* Main content area */
+        .main-area {
+            margin-left: 260px;
+            min-height: 100vh;
+            padding: 2rem 2.5rem;
+        }
+
+        /* Top bar */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        .top-bar h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+        }
+        .top-bar p {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin: 0.15rem 0 0;
+        }
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .top-bar-right .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .top-bar-right span {
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        /* Quick stats row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-box {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1.25rem 1.25rem;
+        }
+        .stat-box .stat-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #94a3b8;
+            margin-bottom: 0.35rem;
+        }
+        .stat-box .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1;
+        }
+        .stat-box .stat-sub {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 0.25rem;
+        }
+
+        /* Tool cards grid */
+        .tools-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .t-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+        }
+        .t-card:hover {
+            border-color: #0d9488;
+            box-shadow: 0 2px 12px rgba(13,148,136,0.08);
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .t-card-top {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .t-card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .t-card-top h3 {
+            font-size: 0.95rem;
+            font-weight: 650;
+            color: #1e293b;
+            margin: 0;
+        }
+        .t-card p {
+            font-size: 0.82rem;
+            color: #64748b;
+            line-height: 1.5;
+            margin: 0 0 1rem;
+            flex-grow: 1;
+        }
+        .t-card-action {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #0d9488;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .t-card-action i {
+            font-size: 0.65rem;
+            transition: transform 0.15s ease;
+        }
+        .t-card:hover .t-card-action i {
+            transform: translateX(3px);
+        }
+
+        /* Quick start strip */
+        .quick-strip {
+            margin-top: 1.75rem;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .quick-strip i {
+            color: #f59e0b;
+            font-size: 0.9rem;
+        }
+        .quick-strip p {
+            margin: 0;
+            font-size: 0.82rem;
+            color: #475569;
+            flex-grow: 1;
+        }
+        .quick-strip a {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #0d9488;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .quick-strip a:hover {
+            color: #0f766e;
+        }
+
+        /* Footer override */
+        footer {
+            margin-left: 260px;
+        }
+
+        /* Responsive */
+        @media (max-width: 991px) {
+            .sidebar { width: 220px; }
+            .main-area { margin-left: 220px; padding: 1.5rem; }
+            footer { margin-left: 220px; }
+            .tools-grid { grid-template-columns: repeat(2, 1fr); }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 767px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                flex-wrap: wrap;
+                padding: 0.75rem 1rem;
+            }
+            .sidebar-brand { padding: 0.5rem 0; border: none; }
+            .sidebar-section { display: none; }
+            .sidebar-nav {
+                display: flex;
+                gap: 0.25rem;
+                padding: 0;
+                flex-wrap: wrap;
+            }
+            .sidebar-nav a { padding: 0.4rem 0.6rem; font-size: 0.78rem; }
+            .sidebar-footer { display: none; }
+            .main-area { margin-left: 0; padding: 1.25rem; }
+            footer { margin-left: 0; }
+            .tools-grid { grid-template-columns: 1fr; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .quick-strip { flex-direction: column; text-align: center; }
+        }
+    </style>
 </head>
 <body>
-    <div class="main-container">
-        <nav class="navbar navbar-expand-lg navbar-light fixed-top">
-            <div class="container">
-                <a class="navbar-brand d-flex flex-column align-items-center" href="/">
-                    <img src="{{ url_for('static', filename='logo.png') }}" alt="TalentCore AI" height="30">
-                    <small>TalentCore AI</small>
-                </a>
-                <div class="navbar-nav ms-auto">
-                    <a class="nav-link" href="/">
-                        <i class="fas fa-home me-1"></i>Home
-                    </a>
-                    <a class="nav-link active" href="/dashboard">
-                        <i class="fas fa-tachometer-alt me-1"></i>Dashboard
-                    </a>
-                </div>
-            </div>
-        </nav>
 
-    <div class="container" style="margin-top: 100px;">
-        <div class="row">
-            <div class="col-12 text-center mb-4">
-                <h1><i class="fas fa-tachometer-alt me-3"></i>TalentCore AI Dashboard</h1>
-                <p class="text-muted">Access all AI-powered hiring tools from one central location</p>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <a href="/" class="sidebar-brand">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Agent2Hire">
+            <div class="sidebar-brand-text">
+                Agent2Hire
+                <span>Hiring Intelligence</span>
+            </div>
+        </a>
+
+        <div class="sidebar-section">Navigation</div>
+        <ul class="sidebar-nav">
+            <li><a href="/">Home</a></li>
+            <li><a href="/dashboard" class="active">Dashboard</a></li>
+        </ul>
+
+        <div class="sidebar-section">Tools</div>
+        <ul class="sidebar-nav">
+            <li><a href="/talentwiz">Agent2Hire Match</a></li>
+            <li><a href="/ats">ATS</a></li>
+            <li><a href="/qa-generator">Q&A Generator</a></li>
+            <li><a href="/voice-interview">Voice Interview</a></li>
+            <li><a href="/call-analysis">Call Analysis</a></li>
+            <li><a href="/ai-mode">AI Assistant</a></li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <a href="/">www.agent2hire.ai</a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-area">
+
+        <div class="top-bar">
+            <div>
+                <h1>Dashboard</h1>
+                <p>Your hiring command centre</p>
+            </div>
+            <div class="top-bar-right">
+                <span>All systems operational</span>
             </div>
         </div>
 
-        <!-- Feature Access Cards -->
-        <div class="row g-4 mb-5">
-            <!-- First Row -->
-            <div class="col-lg-4 col-md-6 fade-in-up">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <div class="feature-icon">
-                            <i class="fas fa-magic"></i>
-                        </div>
-                        <h5 class="card-title">TalentWiz</h5>
-                        <p class="card-text">AI-powered JD-Resume matching with neural scoring</p>
-                        <a href="/talentwiz" class="btn btn-primary">
-                            <i class="fas fa-play me-2"></i>Access TalentWiz
-                        </a>
-                    </div>
-                </div>
+        <!-- Quick Stats -->
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="stat-label">Modules</div>
+                <div class="stat-value">6</div>
+                <div class="stat-sub">AI-powered tools</div>
             </div>
-
-            <div class="col-lg-4 col-md-6 fade-in-up">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <div class="feature-icon">
-                            <i class="fas fa-users-cog"></i>
-                        </div>
-                        <h5 class="card-title">ATS</h5>
-                        <p class="card-text">Complete applicant tracking system</p>
-                        <a href="/ats" class="btn btn-primary">
-                            <i class="fas fa-arrow-right me-2"></i>Access ATS
-                        </a>
-                    </div>
-                </div>
+            <div class="stat-box">
+                <div class="stat-label">Roles Covered</div>
+                <div class="stat-value">500+</div>
+                <div class="stat-sub">Industry templates</div>
             </div>
-
-            <div class="col-lg-4 col-md-6 fade-in-up">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <div class="feature-icon">
-                            <i class="fas fa-question-circle"></i>
-                        </div>
-                        <h5 class="card-title">Q&A Generator</h5>
-                        <p class="card-text">Generate questions for 500+ roles</p>
-                        <a href="/qa-generator" class="btn btn-primary">
-                            <i class="fas fa-cogs me-2"></i>Generate Questions
-                        </a>
-                    </div>
-                </div>
+            <div class="stat-box">
+                <div class="stat-label">Time Saved</div>
+                <div class="stat-value">80%</div>
+                <div class="stat-sub">vs manual hiring</div>
             </div>
-
-            <!-- Second Row -->
-            <div class="col-lg-4 col-md-6 fade-in-up">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <div class="feature-icon">
-                            <i class="fas fa-microphone"></i>
-                        </div>
-                        <h5 class="card-title">Voice Interview</h5>
-                        <p class="card-text">AI-powered voice screening interviews</p>
-                        <a href="/voice-interview" class="btn btn-primary">
-                            <i class="fas fa-microphone-alt me-2"></i>Start Interview
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6 fade-in-up">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <div class="feature-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <h5 class="card-title">Call Analysis</h5>
-                        <p class="card-text">Analyze interviews for insights</p>
-                        <a href="/call-analysis" class="btn btn-primary">
-                            <i class="fas fa-analytics me-2"></i>Analyze Calls
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6 fade-in-up">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <div class="feature-icon">
-                            <i class="fas fa-robot"></i>
-                        </div>
-                        <h5 class="card-title">AI Assistant</h5>
-                        <p class="card-text">Interactive AI hiring co-pilot</p>
-                        <a href="/ai-mode" class="btn btn-primary">
-                            <i class="fas fa-brain me-2"></i>Launch AI
-                        </a>
-                    </div>
-                </div>
+            <div class="stat-box">
+                <div class="stat-label">Accuracy</div>
+                <div class="stat-value">95%</div>
+                <div class="stat-sub">Matching precision</div>
             </div>
         </div>
 
-        <!-- Quick Access to Home Page Info -->
-        <div class="row mt-4">
-            <div class="col-12 text-center">
-                <div class="info-section">
-                    <h4 class="mb-3">Need Feature Information?</h4>
-                    <p class="text-muted mb-3">Learn about all features and capabilities</p>
-                    <a href="/" class="btn btn-light">
-                        <i class="fas fa-info-circle me-2"></i>View Feature Details
-                    </a>
+        <!-- Tools -->
+        <div class="tools-label">Tools</div>
+        <div class="tools-grid">
+
+            <a href="/talentwiz" class="t-card">
+                <div class="t-card-top">
+                    <div class="t-card-icon" style="background: #0d9488;">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <h3>Agent2Hire Match</h3>
                 </div>
-            </div>
+                <p>Match resumes against job descriptions with AI-powered scoring and gap analysis.</p>
+                <div class="t-card-action">Open Agent2Hire Match <i class="fas fa-arrow-right"></i></div>
+            </a>
+
+            <a href="/ats" class="t-card">
+                <div class="t-card-top">
+                    <div class="t-card-icon" style="background: #6366f1;">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <h3>ATS</h3>
+                </div>
+                <p>Track candidates through your pipeline. Manage stages, interviews, and team collaboration.</p>
+                <div class="t-card-action">Open ATS <i class="fas fa-arrow-right"></i></div>
+            </a>
+
+            <a href="/qa-generator" class="t-card">
+                <div class="t-card-top">
+                    <div class="t-card-icon" style="background: #f59e0b;">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h3>Q&A Generator</h3>
+                </div>
+                <p>Generate role-specific interview questions across technical and behavioural categories.</p>
+                <div class="t-card-action">Open Generator <i class="fas fa-arrow-right"></i></div>
+            </a>
+
+            <a href="/voice-interview" class="t-card">
+                <div class="t-card-top">
+                    <div class="t-card-icon" style="background: #ec4899;">
+                        <i class="fas fa-microphone"></i>
+                    </div>
+                    <h3>Voice Interview</h3>
+                </div>
+                <p>Run automated AI voice screenings. Candidates answer, the agent evaluates and scores.</p>
+                <div class="t-card-action">Start Interview <i class="fas fa-arrow-right"></i></div>
+            </a>
+
+            <a href="/call-analysis" class="t-card">
+                <div class="t-card-top">
+                    <div class="t-card-icon" style="background: #3b82f6;">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Call Analysis</h3>
+                </div>
+                <p>Upload interview recordings and receive sentiment analysis, scoring, and hiring recommendations.</p>
+                <div class="t-card-action">Analyse Calls <i class="fas fa-arrow-right"></i></div>
+            </a>
+
+            <a href="/ai-mode" class="t-card">
+                <div class="t-card-top">
+                    <div class="t-card-icon" style="background: #134e4a;">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>AI Assistant</h3>
+                </div>
+                <p>Ask hiring questions in natural language. Get comparisons, insights, and recommendations.</p>
+                <div class="t-card-action">Launch Assistant <i class="fas fa-arrow-right"></i></div>
+            </a>
+
         </div>
+
+        <!-- Quick Start Tip -->
+        <div class="quick-strip">
+            <i class="fas fa-lightbulb"></i>
+            <p><strong>Getting started?</strong> Upload a JD in <strong>Agent2Hire Match</strong> to match candidates, or use <strong>Q&A Generator</strong> to prepare for your next round.</p>
+            <a href="/">View all features &rarr;</a>
+        </div>
+
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    </div>
-
-    <footer class="text-center py-3 mt-5" style="background-color: #f8f9fa; border-top: 1px solid #dee2e6;">
+    <footer class="text-center py-3 mt-5">
         <p class="text-muted mb-0">&copy; 2026 GradientM IT Consulting &amp; Services Pvt Ltd. All rights reserved.</p>
     </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

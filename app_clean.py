@@ -37,7 +37,7 @@ except Exception as e:
     print(f"Firestore initialization failed: {e}")
     db = None
 
-SYSTEM_PROMPT = """You are TalentCore AI, a high-fidelity Talent Acquisition Intelligence agent. Your objective is to assist HR teams in 5 critical areas:
+SYSTEM_PROMPT = """You are Agent2Hire, a high-fidelity Talent Acquisition Intelligence agent. Your objective is to assist HR teams in 5 critical areas:
 
 JD-Resume Matching: Provide neural-matching scores based on skills, seniority, and cultural markers.
 Question Bank: Generate industry-standard Q&A for over 500+ specialized roles.

@@ -1,4 +1,4 @@
-# TalentCore AI - Talent Intelligence Suite
+# Agent2Hire
 
 A dynamic AI-powered recruitment platform using Python/Flask and Gemini 2.5 Flash.
 

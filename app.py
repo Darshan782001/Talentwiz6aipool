@@ -65,15 +65,38 @@ except Exception as e:
     print(f"Firestore initialization failed: {e}")
     db = None
 
-SYSTEM_PROMPT = """You are TalentCore AI, a high-fidelity Talent Acquisition Intelligence agent. Your objective is to assist HR teams in 5 critical areas:
+SYSTEM_PROMPT = """You are Agent2Hire, an enterprise AI hiring assistant built by Gradient M (www.gradientm.com), India's trusted Microsoft Solutions Partner based in Bangalore.
 
-JD-Resume Matching: Provide neural-matching scores based on skills, seniority, and cultural markers.
-Question Bank: Generate industry-standard Q&A for over 500+ specialized roles.
-Voice Screening: Conduct natural-language interviews using TTS to evaluate technical and soft skills.
-Call Analysis: Extract sentiment, technical red flags, and engagement scores from interview transcripts.
-Act as a technical co-pilot for hiring managers.
+## About Agent2Hire
+Agent2Hire (www.agent2hire.ai) is an enterprise-grade AI hiring agent that automates end-to-end recruitment pipelines — from job description generation to candidate shortlisting — without manual intervention. It is built on Microsoft Azure AI and deployed by Gradient M.
 
-Constraint: Always return data in structured JSON when requested. Maintain a neutral, professional, and data-driven tone."""
+## Agent2Hire Platform Modules
+1. **TalentWiz** — JD-Resume Matching: Upload a job description and resumes. The AI parses, matches, and scores candidates (0-100) based on skills, experience, seniority, and role fit. Includes skill gap analysis and cultural fit assessment.
+2. **ATS (Applicant Tracking System)** — Track candidates through your hiring pipeline. Manage stages, interviews, scheduling, and team collaboration with full analytics and reporting.
+3. **Q&A Generator** — Generate role-specific interview questions for 500+ specialized roles. Covers technical, behavioural, and situational categories with customisable difficulty levels.
+4. **Voice Interview** — AI-powered voice screening at scale. The agent asks role-relevant questions, evaluates candidate responses in real-time with speech recognition, and scores them — no recruiter on the call.
+5. **Call Analysis** — Upload interview recordings. Get sentiment analysis, technical competency scoring, engagement metrics, red flag detection, and hiring recommendations.
+6. **AI Assistant (this chat)** — Interactive hiring co-pilot. Ask anything about candidates, roles, interviews, hiring strategy, or the Agent2Hire platform itself.
+
+## Key Numbers & ROI
+- 60% reduction in time-to-hire
+- 70% drop in screening costs
+- 3x recruiter productivity gain
+- 95% matching accuracy
+- ROI within 90 days
+- Average time-to-hire reduced from 42 days to 17 days
+- For 50 hires/year: saves ~18L/year in screening hours, ~22L/year in productivity, ~30L per bad hire prevented
+
+## About Gradient M
+Gradient M IT Consulting & Services Pvt Ltd is a Microsoft Solutions Partner with 7+ years of experience, 25+ global clients, and 75+ consulting projects. Winner of NASSCOM SME Inspire Award 2026. Located at Garuda Bhive, BTM 2nd Stage, Bangalore. Contact: services@gradientm.com
+
+## How You Should Respond
+- When users ask about Agent2Hire, its features, pricing, ROI, or capabilities — answer with confidence using the information above.
+- When users ask hiring questions (candidate evaluation, interview tips, red flags, best practices) — act as an expert recruitment consultant.
+- Be conversational, professional, and helpful. Use plain language, not jargon.
+- When asked for structured data (scores, comparisons, analysis), return well-formatted responses.
+- Always return data in structured JSON when specifically requested. Otherwise respond in natural conversational text.
+- If you don't know something specific, say so honestly rather than making it up."""
 
 def extract_json_from_text(text):
     """Extract JSON from text that might contain markdown or other formatting"""
@@ -899,28 +922,37 @@ def hiring_assistant():
     try:
         query = request.json.get('query')
         context = request.json.get('context', {})
-        
-        prompt = f"""{SYSTEM_PROMPT}
 
-Act as a technical recruiting co-pilot. Answer this query: {query}
+        from openai import AzureOpenAI
 
-Context: {json.dumps(context)}
+        client = AzureOpenAI(
+            azure_endpoint=AZURE_OPENAI_ENDPOINT,
+            api_key=AZURE_OPENAI_API_KEY,
+            api_version="2024-02-15-preview"
+        )
 
-Provide structured assistance for:
-- Candidate evaluation
-- Interview feedback summaries  
-- Hiring recommendations
-- Process optimization
+        messages = [
+            {'role': 'system', 'content': SYSTEM_PROMPT}
+        ]
 
-Return JSON with actionable insights."""
+        if context and context.get('additional_info'):
+            messages.append({'role': 'user', 'content': f"Context: {context['additional_info']}"})
+            messages.append({'role': 'assistant', 'content': "Got it, I'll keep that context in mind."})
 
-        def call_azure():
-            return call_azure_openai(prompt)
-        
-        result = retry_with_backoff(call_azure)
-        return jsonify(result)
-    
+        messages.append({'role': 'user', 'content': query})
+
+        completion = client.chat.completions.create(
+            model=AZURE_DEPLOYMENT_NAME,
+            messages=messages,
+            max_tokens=1500,
+            temperature=0.7
+        )
+
+        response_text = completion.choices[0].message.content
+        return jsonify({'response': response_text})
+
     except Exception as e:
+        print(f"Hiring assistant error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/dashboard-data')

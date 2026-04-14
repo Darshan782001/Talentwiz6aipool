@@ -4,273 +4,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TalentCore AI - Talent Intelligence Suite</title>
+    <title>Agent2Hire - Hire Smarter. Hire Faster.</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
 </head>
 <body>
     <div class="main-container">
+        <!-- Navbar -->
         <nav class="navbar navbar-expand-lg navbar-light fixed-top">
             <div class="container">
                 <a class="navbar-brand d-flex flex-column align-items-center" href="/">
-                    <img src="{{ url_for('static', filename='logo.png') }}" alt="TalentCore AI" height="30">
-                    <small>TalentCore AI</small>
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Agent2Hire" height="30">
+                    <small>agent2hire.ai</small>
                 </a>
                 <div class="navbar-nav ms-auto">
-                    <a class="nav-link active" href="/">
-                        <i class="fas fa-home me-1"></i>Home
-                    </a>
-                    <a class="nav-link" href="/dashboard">
-                        <i class="fas fa-tachometer-alt me-1"></i>Dashboard
-                    </a>
+                    <a class="nav-link active" href="/">Home</a>
+                    <a class="nav-link" href="/dashboard">Dashboard</a>
                 </div>
             </div>
         </nav>
 
-    <div class="container" style="margin-top: 100px;">
-        <div class="row">
-            <div class="col-12 text-center mb-5">
-                <div class="hero-section fade-in-up">
-                    <h1>TalentCore AI Suite</h1>
-                    <p class="lead">Complete AI-powered talent acquisition platform with 6 integrated modules</p>
-                    <p class="text-muted">From resume matching to voice interviews - streamline your entire hiring process</p>
+        <!-- ===== HERO SECTION ===== -->
+        <div class="container" style="margin-top: 100px;">
+            <div class="row">
+                <div class="col-12 text-center mb-5">
+                    <div class="hero-section fade-in-up">
+                        <p class="hero-tag">agent2hire.ai</p>
+                        <h1>HIRE SMARTER<br>HIRE FASTER</h1>
+                        <p class="lead">AI-Powered Talent Acquisition for Modern Enterprises.</p>
+                        <p class="hero-desc">Agent2Hire is an enterprise AI hiring agent that automates your end-to-end recruitment pipeline, from job description generation to candidate shortlist without manual intervention. Built on Microsoft Azure AI and deployed by Gradient M, India's trusted Microsoft Solutions Partner.</p>
+                        <div class="mt-4">
+                            <a href="/dashboard" class="btn btn-light btn-lg me-3">
+                                <i class="fas fa-rocket me-2"></i>Launch Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technology Partners Bar -->
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="partners-bar fade-in-up">
+                        <p class="partners-label">TECHNOLOGY PARTNERS</p>
+                        <div class="row align-items-center justify-content-center text-center">
+                            <div class="col-auto px-4">
+                                <div class="partner-badge"><i class="fab fa-microsoft me-2"></i>Microsoft Solutions Partner</div>
+                            </div>
+                            <div class="col-auto px-4">
+                                <div class="partner-badge"><i class="fas fa-cloud me-2"></i>Azure AI</div>
+                            </div>
+                            <div class="col-auto px-4">
+                                <div class="partner-badge"><i class="fas fa-award me-2"></i>NASSCOM SME Inspire Award 2026</div>
+                            </div>
+                        </div>
+                        <div class="row text-center mt-4 justify-content-center">
+                            <div class="col-auto">
+                                <div class="trust-stat">
+                                    <span class="trust-num">25+</span>
+                                    <span class="trust-label">Global Clients</span>
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <div class="trust-stat">
+                                    <span class="trust-num">75+</span>
+                                    <span class="trust-label">Consulting Projects</span>
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <div class="trust-stat">
+                                    <span class="trust-num">7+</span>
+                                    <span class="trust-label">Years</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== SECTION 01: THE HIRING PROBLEM ===== -->
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="section-block fade-in-up">
+                        <div class="section-num">01</div>
+                        <h6 class="section-eyebrow">THE HIRING PROBLEM</h6>
+                        <h2 class="section-title">Why traditional hiring is holding you back.</h2>
+                        <p class="section-intro">Every day an open role sits unfilled, your business pays a hidden tax &mdash; in lost output, overburdened teams, and missed opportunities. Most organisations are still running hiring like it's 2005.</p>
+
+                        <!-- Problem Stats -->
+                        <div class="row text-center mt-4 mb-5 g-3">
+                            <div class="col-md-3 col-6">
+                                <div class="problem-stat">
+                                    <span class="problem-num">42</span>
+                                    <span class="problem-unit">Days</span>
+                                    <span class="problem-desc">Average time-to-hire across industries</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="problem-stat">
+                                    <span class="problem-num">60%</span>
+                                    <span class="problem-unit">&nbsp;</span>
+                                    <span class="problem-desc">of recruiter time spent on screening alone</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="problem-stat">
+                                    <span class="problem-num">3&times;</span>
+                                    <span class="problem-unit">&nbsp;</span>
+                                    <span class="problem-desc">Cost of a bad hire vs. annual salary</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="problem-stat">
+                                    <span class="problem-num">60%</span>
+                                    <span class="problem-unit">&nbsp;</span>
+                                    <span class="problem-desc">Candidates drop off due to slow process</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pain Points -->
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="pain-card">
+                                    <span class="pain-num">01</span>
+                                    <h5>Recruiters buried in admin</h5>
+                                    <p>Posting JDs, chasing candidates, coordinating interviews &mdash; little time left for strategy or quality hiring.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="pain-card">
+                                    <span class="pain-num">02</span>
+                                    <h5>No visibility into the pipeline</h5>
+                                    <p>Founders and CHROs often don't know where candidates stand until it's too late to course-correct.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="pain-card">
+                                    <span class="pain-num">03</span>
+                                    <h5>Inconsistent screening = inconsistent hires</h5>
+                                    <p>Human fatigue and bias mean the best candidates don't always make it through the first filter.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="pain-card">
+                                    <span class="pain-num">04</span>
+                                    <h5>Scaling hiring breaks teams</h5>
+                                    <p>Growth spurts expose how manual and fragile your talent operations really are.</p>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== SECTION 02: THE SOLUTION ===== -->
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="section-block solution-block fade-in-up">
+                        <div class="section-num">02</div>
+                        <h6 class="section-eyebrow">THE SOLUTION</h6>
+                        <h2 class="section-title">Meet Agent2Hire.<br>Your AI-powered recruitment agent.</h2>
+                        <p class="section-intro">Agent2Hire is an enterprise-grade AI hiring agent that automates the most time-consuming parts of your recruitment pipeline. It parses and matches resumes against your job description, shortlists the best-fit candidates, and puts them through an AI voice screening &mdash; delivering a ranked, interview-ready shortlist without a recruiter touching it.</p>
+
+                        <!-- Pipeline Steps -->
+                        <div class="pipeline-flow mt-5 mb-5">
+                            <div class="row text-center g-3 justify-content-center">
+                                <div class="col">
+                                    <div class="pipeline-step">
+                                        <div class="pipeline-num">01</div>
+                                        <p>JD Input</p>
+                                    </div>
+                                </div>
+                                <div class="col-auto d-flex align-items-center">
+                                    <i class="fas fa-chevron-right pipeline-arrow"></i>
+                                </div>
+                                <div class="col">
+                                    <div class="pipeline-step">
+                                        <div class="pipeline-num">02</div>
+                                        <p>Resume Parsing</p>
+                                    </div>
+                                </div>
+                                <div class="col-auto d-flex align-items-center">
+                                    <i class="fas fa-chevron-right pipeline-arrow"></i>
+                                </div>
+                                <div class="col">
+                                    <div class="pipeline-step">
+                                        <div class="pipeline-num">03</div>
+                                        <p>AI Shortlisting</p>
+                                    </div>
+                                </div>
+                                <div class="col-auto d-flex align-items-center">
+                                    <i class="fas fa-chevron-right pipeline-arrow"></i>
+                                </div>
+                                <div class="col">
+                                    <div class="pipeline-step">
+                                        <div class="pipeline-num">04</div>
+                                        <p>Voice Agent Screening</p>
+                                    </div>
+                                </div>
+                                <div class="col-auto d-flex align-items-center">
+                                    <i class="fas fa-chevron-right pipeline-arrow"></i>
+                                </div>
+                                <div class="col">
+                                    <div class="pipeline-step">
+                                        <div class="pipeline-num">05</div>
+                                        <p>Final Shortlist Delivered</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-center mt-3 pipeline-label">End-to-end pipeline &mdash; fully automated, fully auditable</p>
+                        </div>
+
+                        <!-- Three Pillars -->
+                        <div class="row g-4 mt-3">
+                            <div class="col-md-4">
+                                <div class="pillar-card">
+                                    <div class="pillar-icon"><i class="fas fa-bolt"></i></div>
+                                    <h5>Autonomous</h5>
+                                    <p>Operates independently across the full hiring workflow &mdash; no hand-holding required.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="pillar-card">
+                                    <div class="pillar-icon"><i class="fas fa-sliders-h"></i></div>
+                                    <h5>Configurable</h5>
+                                    <p>Maps to your hiring criteria, competency frameworks, and existing HR processes.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="pillar-card">
+                                    <div class="pillar-icon"><i class="fas fa-shield-alt"></i></div>
+                                    <h5>Enterprise-Ready</h5>
+                                    <p>Built on Azure AI with enterprise security, compliance, and Microsoft ecosystem integration.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="impl-note mt-4"><i class="fab fa-microsoft me-2"></i>Implemented by Gradient M &mdash; Microsoft Solutions Partner with deep expertise in Azure AI and enterprise deployment.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== SECTION 03: FEATURES & CAPABILITIES ===== -->
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="section-block fade-in-up">
+                        <div class="section-num">03</div>
+                        <h6 class="section-eyebrow">FEATURES & CAPABILITIES</h6>
+                        <h2 class="section-title">What Agent2Hire does for your organisation.</h2>
+
+                        <div class="row g-4 mt-4">
+                            <div class="col-md-6">
+                                <div class="capability-card">
+                                    <span class="cap-num">1</span>
+                                    <h5>JD-Based Candidate Matching</h5>
+                                    <p>You provide the job description. Agent2Hire reads and structures your requirements and uses them as the benchmark for every candidate evaluation &mdash; no manual criteria-setting needed.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="capability-card">
+                                    <span class="cap-num">2</span>
+                                    <h5>Automated Resume Parsing</h5>
+                                    <p>Resumes are parsed at scale and matched against your JD criteria &mdash; skills, experience, and role fit &mdash; eliminating hours of manual CV review from your hiring team.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="capability-card">
+                                    <span class="cap-num">3</span>
+                                    <h5>AI Shortlisting</h5>
+                                    <p>The best-fit candidates from the parsed pool are automatically filtered and ranked, so your team only sees candidates who meet the bar &mdash; not everyone who applied.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="capability-card">
+                                    <span class="cap-num">4</span>
+                                    <h5>Voice Agent Screening</h5>
+                                    <p>Shortlisted candidates go through an AI-powered voice screening. The agent asks role-relevant questions, evaluates responses, and scores candidates without a recruiter on the call.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="capability-card">
+                                    <span class="cap-num">5</span>
+                                    <h5>Objective Scoring & Ranking</h5>
+                                    <p>Every candidate receives a transparent score based on consistent criteria. No fatigue, no unconscious bias &mdash; just a clean ranked list your team can act on.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="capability-card">
+                                    <span class="cap-num">6</span>
+                                    <h5>Final Shortlist Delivery</h5>
+                                    <p>A ranked, voice-screened shortlist is delivered to your hiring team &mdash; interview-ready, with scores and screening summaries attached per candidate.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== SECTION 04: ROI & BUSINESS CASE ===== -->
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="section-block roi-block fade-in-up">
+                        <div class="section-num">04</div>
+                        <h6 class="section-eyebrow">ROI & BUSINESS CASE</h6>
+                        <h2 class="section-title">The numbers speak for themselves.</h2>
+                        <p class="section-intro">Agent2Hire is not a cost &mdash; it is a capital allocation decision that pays back within 90 days.</p>
+
+                        <div class="row text-center mt-4 mb-5 g-3">
+                            <div class="col-md-3 col-6">
+                                <div class="roi-stat">
+                                    <span class="roi-num">60%</span>
+                                    <span class="roi-label">Reduction in time-to-hire</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="roi-stat">
+                                    <span class="roi-num">70%</span>
+                                    <span class="roi-label">Drop in screening costs</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="roi-stat">
+                                    <span class="roi-num">3&times;</span>
+                                    <span class="roi-label">Recruiter productivity gain</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="roi-stat">
+                                    <span class="roi-num">90</span>
+                                    <span class="roi-label">Days to measurable ROI</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h5 class="mb-3" style="font-weight: 700; color: var(--text-primary);">What a typical deployment saves</h5>
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="savings-card">
+                                    <span class="savings-num">01</span>
+                                    <h6>Manual Screening Elimination</h6>
+                                    <p>For a company hiring 50 roles/year, Agent2Hire eliminates an estimated <strong>18L/year</strong> in recruiter hours spent on initial screening and coordination.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="savings-card">
+                                    <span class="savings-num">02</span>
+                                    <h6>Time-to-Hire Compression</h6>
+                                    <p>Reducing average time-to-hire from 42 to 17 days recovers an estimated <strong>22L/year</strong> in business productivity per open role.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="savings-card">
+                                    <span class="savings-num">03</span>
+                                    <h6>Bad Hire Prevention</h6>
+                                    <p>Objective, consistent scoring reduces bad hire rates. Correcting even one senior hire saves upwards of <strong>30L</strong> &mdash; often more than the agent's annual cost.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== SECTION 05: WHY AGENT2HIRE ===== -->
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="section-block fade-in-up">
+                        <div class="section-num">05</div>
+                        <h6 class="section-eyebrow">WHY AGENT2HIRE?</h6>
+                        <h2 class="section-title">What Agent2Hire Does Differently.</h2>
+
+                        <div class="differentiators mt-4">
+                            <div class="diff-item">
+                                <span class="diff-num">1</span>
+                                <div>
+                                    <h5>Resume-to-shortlist without recruiter intervention</h5>
+                                    <p>Agent2Hire handles parsing, matching, shortlisting, and voice screening end-to-end. Your team receives a ranked list &mdash; not a pile of CVs.</p>
+                                </div>
+                            </div>
+                            <div class="diff-item">
+                                <span class="diff-num">2</span>
+                                <div>
+                                    <h5>AI voice screening at scale</h5>
+                                    <p>Every shortlisted candidate goes through a consistent, structured voice screening &mdash; no scheduling conflicts, no interviewer fatigue, no bias in the first filter.</p>
+                                </div>
+                            </div>
+                            <div class="diff-item">
+                                <span class="diff-num">3</span>
+                                <div>
+                                    <h5>Objective, auditable decisions</h5>
+                                    <p>Every score, every ranking, every screening outcome is logged. Hiring decisions are consistent, defensible, and free from gut-feel variation.</p>
+                                </div>
+                            </div>
+                            <div class="diff-item">
+                                <span class="diff-num">4</span>
+                                <div>
+                                    <h5>Faster time-to-shortlist</h5>
+                                    <p>What takes weeks of recruiter bandwidth is compressed into hours. Your team focuses only on candidates who've already been vetted.</p>
+                                </div>
+                            </div>
+                            <div class="diff-item">
+                                <span class="diff-num">5</span>
+                                <div>
+                                    <h5>Enterprise-grade, built on Azure AI</h5>
+                                    <p>Deployed by Gradient M, Microsoft Solutions Partner. Enterprise security, compliance, and scalability built in. NASSCOM SME Inspire Award 2026.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== IMPLEMENTED BY GRADIENT M ===== -->
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="section-block gradient-m-block fade-in-up">
+                        <div class="text-center">
+                            <h6 class="section-eyebrow">IMPLEMENTED BY GRADIENT M</h6>
+                            <h3 class="mb-3" style="font-weight: 700; color: var(--text-primary);">Not just software &mdash; a fully configured, supported deployment.</h3>
+                            <p class="section-intro">We are your end-to-end implementation partner, so you buy outcomes, not a product to figure out.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== CTA: LET'S TALK OUTCOMES ===== -->
+            <div class="row mb-5">
+                <div class="col-12 text-center">
+                    <div class="cta-section fade-in-up">
+                        <h2 class="mb-3">Let's Talk Outcomes</h2>
+                        <p class="mb-4" style="font-size: 1.1rem; color: var(--text-secondary);">Ready to reduce time-to-hire, eliminate screening cost, and make hiring a competitive advantage?<br>Let's build something that works.</p>
+                        <a href="/dashboard" class="btn btn-light btn-lg me-2">
+                            <i class="fas fa-rocket me-2"></i>Launch Dashboard
+                        </a>
+                        <div class="contact-info mt-4">
+                            <p class="mb-1"><i class="fas fa-globe me-2"></i>www.agent2hire.ai &nbsp;|&nbsp; www.gradientm.com</p>
+                            <p class="mb-1"><i class="fas fa-envelope me-2"></i>services@gradientm.com</p>
+                            <p class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Garuda Bhive, BTM 2nd Stage, Bangalore</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Features Overview Section -->
-        <div class="row mb-5">
-            <div class="col-12">
-                <div class="features-overview">
-                    <h2 class="text-center mb-4">Complete Hiring Automation Platform</h2>
-                    <div class="row text-center">
-                        <div class="col-md-3 col-6 mb-3">
-                            <div class="stat-card">
-                                <h3>500+</h3>
-                                <p class="text-muted">Specialized Roles</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-6 mb-3">
-                            <div class="stat-card">
-                                <h3>95%</h3>
-                                <p class="text-muted">Accuracy Rate</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-6 mb-3">
-                            <div class="stat-card">
-                                <h3>6</h3>
-                                <p class="text-muted">AI Modules</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-6 mb-3">
-                            <div class="stat-card">
-                                <h3>80%</h3>
-                                <p class="text-muted">Time Saved</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row g-4">
-            <div class="col-lg-4 col-md-6 fade-in-up">
-                <div class="feature-item">
-                    <div class="feature-icon-plain">
-                        <i class="fas fa-magic"></i>
-                    </div>
-                    <h5 class="feature-title">TalentWiz</h5>
-                    <h6 class="feature-subtitle">Smart Matching Engine</h6>
-                    <p class="feature-description">Advanced AI-powered JD-Resume matching with neural scoring algorithms</p>
-                    <div class="feature-list">
-                        <p class="text-muted mb-1">• Neural matching scores (0-100)</p>
-                        <p class="text-muted mb-1">• Skill gap analysis & recommendations</p>
-                        <p class="text-muted mb-1">• Cultural fit assessment</p>
-                        <p class="text-muted mb-0">• Bulk resume processing</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6 fade-in-up">
-                <div class="feature-item">
-                    <div class="feature-icon-plain">
-                        <i class="fas fa-users-cog"></i>
-                    </div>
-                    <h5 class="feature-title">ATS</h5>
-                    <h6 class="feature-subtitle">Applicant Tracking System</h6>
-                    <p class="feature-description">Complete applicant tracking system for end-to-end hiring management</p>
-                    <div class="feature-list">
-                        <p class="text-muted mb-1">• Candidate pipeline management</p>
-                        <p class="text-muted mb-1">• Interview scheduling & tracking</p>
-                        <p class="text-muted mb-1">• Team collaboration tools</p>
-                        <p class="text-muted mb-0">• Analytics & reporting</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6 fade-in-up">
-                <div class="feature-item">
-                    <div class="feature-icon-plain">
-                        <i class="fas fa-question-circle"></i>
-                    </div>
-                    <h5 class="feature-title">Q&A Generator</h5>
-                    <h6 class="feature-subtitle">Smart Question Builder</h6>
-                    <p class="feature-description">AI-powered interview question generator for 500+ specialized roles</p>
-                    <div class="feature-list">
-                        <p class="text-muted mb-1">• 500+ role-specific templates</p>
-                        <p class="text-muted mb-1">• Technical & behavioral questions</p>
-                        <p class="text-muted mb-1">• Difficulty level customization</p>
-                        <p class="text-muted mb-0">• Export & share capabilities</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6 fade-in-up">
-                <div class="feature-item">
-                    <div class="feature-icon-plain">
-                        <i class="fas fa-microphone"></i>
-                    </div>
-                    <h5 class="feature-title">Voice Interview</h5>
-                    <h6 class="feature-subtitle">AI Screening Platform</h6>
-                    <p class="feature-description">Automated voice screening interviews with real-time AI analysis</p>
-                    <div class="feature-list">
-                        <p class="text-muted mb-1">• Real-time speech recognition</p>
-                        <p class="text-muted mb-1">• AI-powered conversation flow</p>
-                        <p class="text-muted mb-1">• Sentiment & confidence analysis</p>
-                        <p class="text-muted mb-0">• Multi-language support</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6 fade-in-up">
-                <div class="feature-item">
-                    <div class="feature-icon-plain">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <h5 class="feature-title">Call Analysis</h5>
-                    <h6 class="feature-subtitle">Deep Insights Engine</h6>
-                    <p class="feature-description">Advanced interview call analysis with sentiment & engagement metrics</p>
-                    <div class="feature-list">
-                        <p class="text-muted mb-1">• Sentiment analysis & trends</p>
-                        <p class="text-muted mb-1">• Technical competency scoring</p>
-                        <p class="text-muted mb-1">• Engagement metrics</p>
-                        <p class="text-muted mb-0">• Hiring recommendations</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6 fade-in-up">
-                <div class="feature-item">
-                    <div class="feature-icon-plain">
-                        <i class="fas fa-robot"></i>
-                    </div>
-                    <h5 class="feature-title">AI Assistant</h5>
-                    <h6 class="feature-subtitle">Smart Decision Support</h6>
-                    <p class="feature-description">Interactive AI co-pilot for hiring decisions and candidate evaluation</p>
-                    <div class="feature-list">
-                        <p class="text-muted mb-1">• Natural language queries</p>
-                        <p class="text-muted mb-1">• Hiring decision support</p>
-                        <p class="text-muted mb-1">• Candidate comparison tools</p>
-                        <p class="text-muted mb-0">• 24/7 intelligent assistance</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Call to Action -->
-        <div class="row mt-5">
-            <div class="col-12 text-center">
-                <div class="cta-section">
-                    <h3 class="mb-3">Ready to Transform Your Hiring Process?</h3>
-                    <p class="text-muted mb-4">Access all features through the dashboard</p>
-                    <a href="/dashboard" class="btn btn-light btn-lg">
-                        <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- How It Works Section -->
-        <div class="row mt-5">
-            <div class="col-12">
-                <div class="how-it-works-section">
-                    <h2 class="text-center mb-4">How TalentCore AI Works</h2>
-                    <div class="row">
-                        <div class="col-md-3 text-center mb-4">
-                            <div class="process-step">
-                                <div class="step-number">1</div>
-                                <h6 class="mt-2">Upload & Match</h6>
-                                <p class="text-muted small">Upload JD and resumes for AI-powered matching</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 text-center mb-4">
-                            <div class="process-step">
-                                <div class="step-number">2</div>
-                                <h6 class="mt-2">Generate Questions</h6>
-                                <p class="text-muted small">Create role-specific interview questions</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 text-center mb-4">
-                            <div class="process-step">
-                                <div class="step-number">3</div>
-                                <h6 class="mt-2">Conduct Interviews</h6>
-                                <p class="text-muted small">Use voice interviews or call analysis</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 text-center mb-4">
-                            <div class="process-step">
-                                <div class="step-number">4</div>
-                                <h6 class="mt-2">Make Decisions</h6>
-                                <p class="text-muted small">Get AI recommendations and insights</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Benefits Section -->
-        <div class="row mt-5 mb-5">
-            <div class="col-12">
-                <div class="benefits-section">
-                    <h2 class="text-center mb-4">Why Choose TalentCore AI?</h2>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="benefit-item">
-                                <i class="fas fa-clock text-warning me-2"></i>
-                                <span><strong>80% Faster Hiring:</strong> Reduce time-to-hire with automated screening</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="benefit-item">
-                                <i class="fas fa-bullseye text-success me-2"></i>
-                                <span><strong>95% Accuracy:</strong> AI-powered matching with neural algorithms</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="benefit-item">
-                                <i class="fas fa-dollar-sign text-info me-2"></i>
-                                <span><strong>Cost Effective:</strong> Reduce hiring costs by up to 60%</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="benefit-item">
-                                <i class="fas fa-users text-primary me-2"></i>
-                                <span><strong>Better Hires:</strong> Data-driven decisions for quality candidates</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    </div>
-
-    <footer class="text-center py-3 mt-5" style="background-color: #f8f9fa; border-top: 1px solid #dee2e6;">
+    <footer class="text-center py-3 mt-5">
         <p class="text-muted mb-0">&copy; 2026 GradientM IT Consulting &amp; Services Pvt Ltd. All rights reserved.</p>
     </footer>
 </body>

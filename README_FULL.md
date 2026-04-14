@@ -1,4 +1,4 @@
-# TalentCore AI - Talent Acquisition Intelligence Platform
+# Agent2Hire - Talent Acquisition Intelligence Platform
 
 A high-fidelity AI-powered recruitment system that assists HR teams with intelligent candidate matching, interview question generation, voice screening, and call analysis.
 

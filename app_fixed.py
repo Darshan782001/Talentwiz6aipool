@@ -44,7 +44,7 @@ except Exception as e:
     print(f"Firestore initialization failed: {e}")
     db = None
 
-SYSTEM_PROMPT = """You are TalentCore AI, a high-fidelity Talent Acquisition Intelligence agent. Your objective is to assist HR teams in 5 critical areas:
+SYSTEM_PROMPT = """You are Agent2Hire, a high-fidelity Talent Acquisition Intelligence agent. Your objective is to assist HR teams in 5 critical areas:
 
 JD-Resume Matching: Provide neural-matching scores based on skills, seniority, and cultural markers.
 Question Bank: Generate industry-standard Q&A for over 500+ specialized roles.
@@ -441,7 +441,7 @@ def extract_docx_text(file):
         return "Error reading DOCX file"
 
 if __name__ == '__main__':
-    print("Starting TalentCore AI Application...")
+    print("Starting Agent2Hire Application...")
     print(f"Azure OpenAI Endpoint: {AZURE_OPENAI_ENDPOINT}")
     print(f"Azure Deployment: {AZURE_DEPLOYMENT_NAME}")
     print(f"Gemini Available: {model is not None}")
